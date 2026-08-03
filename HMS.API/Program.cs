@@ -47,17 +47,22 @@ namespace HMS.API
                     Description = "This is my API description"
                 });
 
-                //options.ExampleFilters();
+                options.ExampleFilters();
             });
 
-            
+            builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
 
 
-                // SERVICES
-                builder.Services.AddScoped<IHotelService, HotelService>();
+
+
+
+            // SERVICES
+            builder.Services.AddScoped<IHotelService, HotelService>();
+            builder.Services.AddScoped<IRoomService, RoomService>();
 
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
+            builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
