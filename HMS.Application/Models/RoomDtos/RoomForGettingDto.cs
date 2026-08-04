@@ -2,20 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace HMS.Domain.Entities
+namespace HMS.Application.Models.RoomDtos
 {
-    public class Room
+    public class RoomForGettingDto
     {
         public int Id { get; set; }
-
         public string Name { get; set; }
 
         public double Price { get; set; }
 
         public int HotelId { get; set; }
-
-        public Hotel Hotel { get; set; }
-
-        public ICollection<ReservationRoom> ReservationRooms { get; set; } = new List<ReservationRoom>();
     }
 }

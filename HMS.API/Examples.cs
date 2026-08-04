@@ -1,4 +1,5 @@
 ﻿using HMS.Application.Models.HotelDtos;
+using HMS.Application.Models.RoomDtos;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace HMS.API
@@ -34,6 +35,19 @@ namespace HMS.API
 
 
             };
+
+            public sealed record RoomForCreatingDtoExample : IExamplesProvider<RoomForCreatingDto>
+            {
+                public RoomForCreatingDto GetExamples()
+                {
+                    return new RoomForCreatingDto
+                    {
+                        Name = "Deluxe Suite",
+                        Price = 250.00,
+                        HotelId = 2002
+                    };
+                }
+            }
         }
     }
 }

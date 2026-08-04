@@ -9,5 +9,12 @@ namespace HMS.Application.Contracts.Service
     {
         Task<int> CreateRoomAsync(RoomForCreatingDto model);
 
+        Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model);
+
+        Task<IEnumerable<RoomForGettingDto>> SearchRoomsAsync(SearchRoomDto model);
+
+        Task<int> DeleteRoomAsync(int id);
+
+        Task<IEnumerable<RoomForGettingDto>> GetRoomsByHotelIdAsync(int hotelId);
     }
 }

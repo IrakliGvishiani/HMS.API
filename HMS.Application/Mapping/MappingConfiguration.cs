@@ -21,6 +21,8 @@ namespace HMS.Application.Mapping
 
             // ROOM MAPPING
             config.NewConfig<RoomForCreatingDto, Room>();
+            config.NewConfig<RoomForUpdatingDto, Room>();
+            config.NewConfig<Room, RoomForGettingDto>();
         }
     }
 }

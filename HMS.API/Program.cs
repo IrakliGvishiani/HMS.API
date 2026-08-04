@@ -63,6 +63,7 @@ namespace HMS.API
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+            builder.Services.AddScoped<IReservationRoomRepository, ReservationRoomRepository>();
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

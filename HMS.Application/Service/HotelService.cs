@@ -5,6 +5,7 @@ using HMS.Application.Models.Common;
 using HMS.Application.Models.HotelDtos;
 using HMS.Domain.Entities;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -50,13 +51,14 @@ namespace HMS.Application.Service
 
         public async Task<int> DeleteHotelAsync(int id)
         {
-            var hotel = await _hotelRepository.GetAsync(f => f.Id == id);
+            var hotel = await _hotelRepository.GetAsync(f => f.Id == id,
+                include: query => query.Include(h => h.Rooms));
             if (hotel == null) throw new NotFoundException("Hotel not found!");
 
-            //if (hotel.Rooms.Any())
-            //{
-            //    throw new BadRequestException("Hotel cannot be deleted because it has rooms.");
-            //}
+            if (hotel.Rooms.Any())
+            {
+                throw new BadRequestException("Hotel cannot be deleted because it has rooms.");
+            }
 
             _hotelRepository.Remove(hotel);
             await _hotelRepository.SaveAsync();
