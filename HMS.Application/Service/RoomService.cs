@@ -15,19 +15,30 @@ namespace HMS.Application.Service
         private readonly IRoomRepository _roomRepository;
         private readonly IHotelService _hotelService;
         private readonly IReservationRoomRepository _reservationRoomRepository;
+        private readonly IManagerRepository _managerRepository;
         private readonly IMapper _mapper;
-        public RoomService(IRoomRepository roomRepository, IHotelService hotelService, IReservationRoomRepository reservationRoomRepository, IMapper mapper)
+        public RoomService(IRoomRepository roomRepository, IHotelService hotelService, IReservationRoomRepository reservationRoomRepository, IManagerRepository managerRepository, IMapper mapper)
         {
             _roomRepository = roomRepository;
             _hotelService = hotelService;
             _reservationRoomRepository = reservationRoomRepository;
+            _managerRepository = managerRepository;
             _mapper = mapper;
         }
-        public async Task<int> CreateRoomAsync(RoomForCreatingDto model)
+        public async Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId)
         {
             if(model == null) throw new BadRequestException("Request Model Required!");
 
-            if(model.Name.Length == 0 || string.IsNullOrWhiteSpace(model.Name)) throw new BadRequestException("Room Name is Required!");
+            var manager = await _managerRepository.GetAsync(m => m.ApplicationUserId == userId);
+
+            if (manager == null)
+                throw new NotFoundException("Manager not found.");
+
+            if (manager.HotelId != model.HotelId)
+                throw new NotAllowedException(
+                    "You cannot create a room for another hotel.");
+
+            if (model.Name.Length == 0 || string.IsNullOrWhiteSpace(model.Name)) throw new BadRequestException("Room Name is Required!");
 
             if(model.Name.Length > 100) throw new BadRequestException("Room Name is too long!");
 
@@ -46,8 +57,20 @@ namespace HMS.Application.Service
             return mappedRoom.Id;
         }
 
-        public async Task<int> DeleteRoomAsync(int id)
+        public async Task<int> DeleteRoomAsync(int id, string userId)
         {
+            var room = await _roomRepository.GetAsync(x => x.Id == id);
+
+
+            var manager = await _managerRepository.GetAsync(m => m.ApplicationUserId == userId);
+
+            if (manager == null)
+                throw new NotFoundException("Manager not found.");
+
+            if (room.HotelId != manager.HotelId)
+                throw new NotAllowedException(
+                    "You cannot delete a room from another hotel.");
+
             bool hasReservations = await _reservationRoomRepository.ExistsAsync(rr =>
     rr.RoomId == id &&
     rr.Reservation.CheckOutDate >= DateTime.UtcNow.Date);
@@ -57,7 +80,7 @@ namespace HMS.Application.Service
             {
                 throw new BadRequestException("Room cannot be deleted because it has active reservations.");
             }
-            var room = await _roomRepository.GetAsync(x => x.Id == id);
+            
             if (room == null) throw new NotFoundException("Room not found!");
             _roomRepository.Remove(room);
             await _roomRepository.SaveAsync();
@@ -97,7 +120,7 @@ namespace HMS.Application.Service
 
         }
 
-        public async Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model)
+        public async Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model, string userId)
         {
            if(model == null) throw new BadRequestException("Request Model Required!");
 
@@ -111,12 +134,24 @@ namespace HMS.Application.Service
 
             if (room == null) throw new NotFoundException("Room not found!");
 
-           var mappedRoom = _mapper.Map(model, room);
+            var manager = await _managerRepository.GetAsync(
+            x => x.ApplicationUserId == userId);
+
+            if (manager == null)
+                throw new NotFoundException("Manager not found.");
+
+            if (room.HotelId != manager.HotelId)
+                throw new NotAllowedException(
+                    "You cannot update a room from another hotel.");
+
+            var mappedRoom = _mapper.Map(model, room);
 
             _roomRepository.Update(mappedRoom);
             await _roomRepository.SaveAsync();
 
             return _mapper.Map<RoomForUpdatingDto>(mappedRoom);
         }
+
+  
     }
 }

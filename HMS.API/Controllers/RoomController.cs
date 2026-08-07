@@ -1,8 +1,10 @@
 ﻿using HMS.Application.Contracts.Service;
 using HMS.Application.Models.RoomDtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using System.Net;
+using System.Security.Claims;
 using static CommonResponse;
 using static HMS.API.Examples.HotelForCreatingDtoExample;
 
@@ -19,11 +21,13 @@ namespace HMS.API.Controllers
             _roomService = roomService;
         }
 
+        [Authorize(Roles = "Manager")]
         [HttpPost]
         [SwaggerRequestExample(typeof(RoomForCreatingDto), typeof(RoomForCreatingDtoExample))]
         public async Task<IActionResult> CreateRoom([FromBody] RoomForCreatingDto model)
         {
-            var result = await _roomService.CreateRoomAsync(model);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _roomService.CreateRoomAsync(model, userId);
             var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.Created));
             return StatusCode(resp.HttpStatusCode, resp);
         }
@@ -32,7 +36,8 @@ namespace HMS.API.Controllers
 
         public async Task<IActionResult> UpdateRoom([FromBody] RoomForUpdatingDto model)
         {
-            var result = await _roomService.UpdateRoomAsync(model);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _roomService.UpdateRoomAsync(model, userId);
             var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
             return StatusCode(resp.HttpStatusCode, resp);
         }
@@ -50,7 +55,8 @@ namespace HMS.API.Controllers
 
         public async Task<IActionResult> DeleteRoom(int id)
         {
-            var result = await _roomService.DeleteRoomAsync(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _roomService.DeleteRoomAsync(id, userId);
             var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
             return StatusCode(resp.HttpStatusCode, resp);
         }

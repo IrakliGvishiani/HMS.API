@@ -1,4 +1,5 @@
-﻿using HMS.Application.Models.HotelDtos;
+﻿using HMS.Application.Models.AuthDtos;
+using HMS.Application.Models.HotelDtos;
 using HMS.Application.Models.RoomDtos;
 using Swashbuckle.AspNetCore.Filters;
 
@@ -48,6 +49,22 @@ namespace HMS.API
                     };
                 }
             }
-        }
+
+            public sealed record ManagerRegistrationRequestDtoExample : IExamplesProvider<ManagerRegistrationRequestDto>
+            {
+                public ManagerRegistrationRequestDto GetExamples()
+                {
+                    return new ManagerRegistrationRequestDto
+                    {
+                        FirstName = "Ika",
+                        LastName = "gvisho",
+                        PersonalNumber = "12345678911",
+                        Email = "irakligvidhiani@gmail.com",
+                        Password = "Ika123456789!",
+                        PhoneNumber = "555101010",
+                        HotelId = 2002
+                    };
     }
+            } }
+    } 
 }

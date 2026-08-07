@@ -39,6 +39,11 @@ namespace HMS.Infrastructure.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(20);
 
+            builder.HasOne(x => x.ApplicationUser)
+       .WithOne(x => x.Manager)
+       .HasForeignKey<Manager>(x => x.ApplicationUserId);
+
+
             builder.HasOne(x => x.Hotel)
                 .WithMany(x => x.Managers)
                 .HasForeignKey(x => x.HotelId);
