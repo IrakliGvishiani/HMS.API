@@ -21,12 +21,23 @@ namespace HMS.Application.Service
         private readonly IRedisService _redisService;
         private readonly IManagerService _managerService;
         private readonly IEmailService _emailService;
+        private readonly IAdminService _adminService;
         private readonly IMapper _mapper;
 
         private const string _adminRole = "Admin";
         private const string _managerRole = "Manager";
 
-        public AuthService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IJwtTokenGenerator jwtTokenGenerator, IConfiguration configuration, IRedisService redisService, IManagerService managerService, IEmailService emailService, IMapper mapper)
+        public AuthService(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IJwtTokenGenerator jwtTokenGenerator, 
+            IConfiguration configuration,
+            IRedisService redisService,
+            IManagerService managerService,
+            IEmailService emailService,
+            IAdminService adminService,
+            IMapper mapper
+            )
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -35,10 +46,75 @@ namespace HMS.Application.Service
             _redisService = redisService;
             _managerService = managerService;
             _emailService = emailService;
+            _adminService = adminService;
             _mapper = mapper;
         }
 
 
+        public async Task<string> RegisterAdminAsync(AdminRegistrationRequestDto model)
+        {
+            var user = _mapper.Map<ApplicationUser>(model);
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                var userToReturn = await _userManager.FindByEmailAsync(model.Email);
+                if (userToReturn != null)
+                {
+                    if (!await _roleManager.RoleExistsAsync(_adminRole))
+                    {
+                        await _roleManager.CreateAsync(new IdentityRole(_adminRole));
+                    }
+                    await _userManager.AddToRoleAsync(userToReturn, _adminRole);
+                    var code = Random.Shared.Next(100000, 999999).ToString();
+                    await _redisService.SetAsync(
+                        $"email-confirm:{user.Id}",
+                        code,
+                        TimeSpan.FromMinutes(5));
+                    var resendCodeLink = $"https://localhost:7042/api/auth/resend-confirmation-code?email={model.Email}";
+                    await _emailService.Send(
+                        model.Email,
+                        "Email Confirmation",
+                         $"""
+                            <h3>Your confirmation code is: <strong>{code}</strong></h3>
+                            <h4>Didn't receive a code?</h4>
+                            <a href="{resendCodeLink}"
+                               style="
+                                   background-color:blue;
+                                   color:white;
+                                   padding:10px 20px;
+                                   text-decoration:none;
+                                   border-radius:5px;
+                                   display:inline-block;">
+                                Resend Confirmation Code
+                            </a>
+                            """
+                        );
+                }
+
+                var admin = new Admin
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    PersonalNumber = model.PersonalNumber,
+                    Email = model.Email,
+                    PhoneNumber = model.PhoneNumber,
+                    ApplicationUserId = user.Id
+                };
+
+                await _adminService.CreateAdminAsync(admin);
+
+
+
+                return userToReturn.Id;
+
+            }
+            else
+            {
+                throw new BadRequestException(result.Errors.FirstOrDefault().Description);
+            }
+        }
         public async Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model)
         {
             var user = _mapper.Map<ApplicationUser>(model);
@@ -248,5 +324,7 @@ namespace HMS.Application.Service
 
             return resp;
         }
+
+
     }
 }

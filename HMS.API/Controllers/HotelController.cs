@@ -3,6 +3,7 @@ using HMS.Application.Exceptions;
 using HMS.Application.Models.Common;
 using HMS.Application.Models.HotelDtos;
 using HMS.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
@@ -36,6 +37,7 @@ namespace HMS.API.Controllers
 
         [HttpPost]
         [SwaggerRequestExample(typeof(HotelForCreatingDto), typeof(HotelForCreatingDtoExample))]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateNewHotel([FromBody] HotelForCreatingDto model)
         {
             var result = await _hotelService.CreateNewHotelAsync(model);
@@ -55,7 +57,7 @@ namespace HMS.API.Controllers
 
         [HttpPut]
         [SwaggerRequestExample(typeof(HotelForUpdatingDto), typeof(HotelForUpdatingDtoExample))]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateHotel([FromBody] HotelForUpdatingDto model)
         {
             var result = await _hotelService.UpdateHotelAsync(model);
@@ -64,6 +66,7 @@ namespace HMS.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteHotel(int id)
         {
             var result = await _hotelService.DeleteHotelAsync(id);

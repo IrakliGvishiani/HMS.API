@@ -97,15 +97,6 @@ namespace HMS.Application.Service
         public async Task<IEnumerable<RoomForGettingDto>> SearchRoomsAsync(SearchRoomDto model)
         {
 
-            //if(model == null) throw new BadRequestException("Request Model Required!");
-
-            //if(model.MinPrice < 0) throw new BadRequestException("Invalid Minimum Price!");
-
-            //if(model.MaxPrice <= 0) throw new BadRequestException("Invalid Maximum Price!");
-
-            //if(model.CheckInDate == DateTime.MinValue || model.CheckOutDate == DateTime.MinValue)
-            //    throw new BadRequestException("Invalid Check-in or Check-out Date!");
-
             var (rooms, _) = await _roomRepository.GetAllAsync(
      filter: room =>
          room.Price >= model.MinPrice &&

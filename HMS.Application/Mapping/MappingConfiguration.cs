@@ -1,5 +1,7 @@
 ﻿using HMS.Application.Models.AuthDtos;
 using HMS.Application.Models.HotelDtos;
+using HMS.Application.Models.ManagerDtos;
+
 //using HMS.Application.Models.ManagerDtos;
 using HMS.Application.Models.RoomDtos;
 using HMS.Domain.Entities;
@@ -27,12 +29,20 @@ namespace HMS.Application.Mapping
             config.NewConfig<Room, RoomForGettingDto>();
 
 
-            
 
+            // MANAGER MAPPING
             config.NewConfig<ManagerRegistrationRequestDto, Manager>();
+            config.NewConfig<Manager, ManagerListForGettingDto>();
 
 
+            // ROLES MAPPING
             config.NewConfig<ManagerRegistrationRequestDto, ApplicationUser>()
+                .Map(dest => dest.UserName, src => src.Email)
+                .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
+                .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
+                .Map(dest => dest.Email, src => src.Email);
+
+            config.NewConfig<AdminRegistrationRequestDto, ApplicationUser>()
                 .Map(dest => dest.UserName, src => src.Email)
                 .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
                 .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())

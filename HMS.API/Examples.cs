@@ -66,5 +66,24 @@ namespace HMS.API
                     };
     }
             } }
+
+
+        public sealed record AdminRegistrationRequestDtoExample : IExamplesProvider<AdminRegistrationRequestDto>
+        {
+            public AdminRegistrationRequestDto GetExamples()
+            {
+                return new AdminRegistrationRequestDto
+                {
+                    FirstName = "Ika",
+                    LastName = "gvisho",
+                    PersonalNumber = "12345678911",
+                    Email = "irakligvidhiani@gmail.com",
+                    Password = "Ika123456789!",
+                    PhoneNumber = "555101010"
+                    
+                };
+            }
+        }
+
     } 
 }

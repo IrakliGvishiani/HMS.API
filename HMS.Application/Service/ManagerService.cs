@@ -2,6 +2,7 @@
 using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
 using HMS.Application.Models.AuthDtos;
+using HMS.Application.Models.ManagerDtos;
 using HMS.Domain.Entities;
 using MapsterMapper;
 using System;
@@ -65,6 +66,33 @@ namespace HMS.Application.Service
             await managerRepository.AddAsync(model);
           await managerRepository.SaveAsync();
             return model.HotelId;
+        }
+
+        public async Task<int> DeleteManagerAsync(int id)
+        {
+            var manager = await managerRepository.GetAsync(s => s.Id == id);
+            if (manager == null)
+                throw new NotFoundException("Manager not found");
+
+            var hasAnotherManager = await managerRepository.ExistsAsync(
+       x => x.HotelId == manager.HotelId &&
+            x.Id != manager.Id);
+
+            if (!hasAnotherManager)
+                throw new BadRequestException(
+                    "Manager cannot be deleted because this hotel must have at least one manager.");
+
+
+            managerRepository.Remove(manager);
+            await managerRepository.SaveAsync();
+            return id;
+        }
+
+        public async Task<IEnumerable<ManagerListForGettingDto>> GetManagersAsync()
+        {
+            var managers = await managerRepository.GetAllAsync();
+            var managerDtos = mapper.Map<IEnumerable<ManagerListForGettingDto>>(managers.Items);
+            return managerDtos;
         }
     }
 }

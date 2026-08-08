@@ -98,12 +98,14 @@ namespace HMS.API
             builder.Services.AddScoped<ISmtpClientWrapper,SmtpClientWrapper>();
             builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IAdminService, AdminService>();
 
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
             builder.Services.AddScoped<IReservationRoomRepository, ReservationRoomRepository>();
             builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+            builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
