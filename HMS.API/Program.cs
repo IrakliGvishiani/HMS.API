@@ -99,6 +99,7 @@ namespace HMS.API
             builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IAdminService, AdminService>();
+            builder.Services.AddScoped<IGuestService, GuestService>();
 
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
@@ -106,6 +107,7 @@ namespace HMS.API
             builder.Services.AddScoped<IReservationRoomRepository, ReservationRoomRepository>();
             builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+            builder.Services.AddScoped<IGuestRepository, GuestRepository>();
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -115,6 +117,9 @@ namespace HMS.API
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequireUppercase = true;
                 options.Password.RequiredLength = 10;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+                options.Lockout.AllowedForNewUsers = true;
 
 
                 options.User.RequireUniqueEmail = true;

@@ -33,12 +33,22 @@ namespace HMS.Infrastructure.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(20);
 
+            builder.Property(x => x.Email)
+                   .IsRequired()
+                   .HasMaxLength(100);
+
             builder.HasIndex(x => x.PhoneNumber).IsUnique();
 
             builder.HasMany(x => x.Reservations)
                 .WithOne(x => x.Guest)
                 .HasForeignKey(x => x.GuestId);
 
+            builder.HasIndex(x => x.Email)
+                  .IsUnique();
+
+            builder.HasOne(x => x.ApplicationUser)
+      .WithOne(x => x.Guest)
+      .HasForeignKey<Guest>(x => x.ApplicationUserId);
         }
     }
 }

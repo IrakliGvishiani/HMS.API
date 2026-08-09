@@ -22,10 +22,12 @@ namespace HMS.Application.Service
         private readonly IManagerService _managerService;
         private readonly IEmailService _emailService;
         private readonly IAdminService _adminService;
+        private readonly IGuestService _guestService;
         private readonly IMapper _mapper;
 
         private const string _adminRole = "Admin";
         private const string _managerRole = "Manager";
+        private const string _guestRole = "Guest";
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
@@ -36,6 +38,7 @@ namespace HMS.Application.Service
             IManagerService managerService,
             IEmailService emailService,
             IAdminService adminService,
+            IGuestService guestService,
             IMapper mapper
             )
         {
@@ -47,6 +50,7 @@ namespace HMS.Application.Service
             _managerService = managerService;
             _emailService = emailService;
             _adminService = adminService;
+            _guestService = guestService;
             _mapper = mapper;
         }
 
@@ -57,63 +61,31 @@ namespace HMS.Application.Service
 
             var result = await _userManager.CreateAsync(user, model.Password);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                var userToReturn = await _userManager.FindByEmailAsync(model.Email);
-                if (userToReturn != null)
-                {
-                    if (!await _roleManager.RoleExistsAsync(_adminRole))
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole(_adminRole));
-                    }
-                    await _userManager.AddToRoleAsync(userToReturn, _adminRole);
-                    var code = Random.Shared.Next(100000, 999999).ToString();
-                    await _redisService.SetAsync(
-                        $"email-confirm:{user.Id}",
-                        code,
-                        TimeSpan.FromMinutes(5));
-                    var resendCodeLink = $"https://localhost:7042/api/auth/resend-confirmation-code?email={model.Email}";
-                    await _emailService.Send(
-                        model.Email,
-                        "Email Confirmation",
-                         $"""
-                            <h3>Your confirmation code is: <strong>{code}</strong></h3>
-                            <h4>Didn't receive a code?</h4>
-                            <a href="{resendCodeLink}"
-                               style="
-                                   background-color:blue;
-                                   color:white;
-                                   padding:10px 20px;
-                                   text-decoration:none;
-                                   border-radius:5px;
-                                   display:inline-block;">
-                                Resend Confirmation Code
-                            </a>
-                            """
-                        );
-                }
-
-                var admin = new Admin
-                {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    PersonalNumber = model.PersonalNumber,
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    ApplicationUserId = user.Id
-                };
-
-                await _adminService.CreateAdminAsync(admin);
-
-
-
-                return userToReturn.Id;
+                throw new BadRequestException(
+       result.Errors.First().Description);
 
             }
-            else
+            await AddRoleAsync(user, _adminRole);
+            await SendConfirmationCodeAsync(user);
+
+
+            var admin = new Admin
             {
-                throw new BadRequestException(result.Errors.FirstOrDefault().Description);
-            }
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                PersonalNumber = model.PersonalNumber,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                ApplicationUserId = user.Id
+            };
+
+            await _adminService.CreateAdminAsync(admin);
+
+
+
+            return user.Id;
         }
         public async Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model)
         {
@@ -123,70 +95,34 @@ namespace HMS.Application.Service
 
             var result = await _userManager.CreateAsync(user, model.Password);
 
-            
 
-            if (result.Succeeded)
+
+            if (!result.Succeeded)
             {
-                var userToReturn = await _userManager.FindByEmailAsync(model.Email);
+                throw new BadRequestException(
+       result.Errors.First().Description);
 
-                if(userToReturn != null)
-                {
-                    if (!await _roleManager.RoleExistsAsync(_managerRole)) 
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole(_managerRole));
-                    }
-
-                    await _userManager.AddToRoleAsync(userToReturn, _managerRole);
-                    var code = Random.Shared.Next(100000, 999999).ToString();
-
-                    await _redisService.SetAsync(
-                        $"email-confirm:{user.Id}",
-                        code,
-                        TimeSpan.FromMinutes(5));
-
-                    var resendCodeLink = $"https://localhost:7042/api/auth/resend-confirmation-code?email={model.Email}";
-
-                    await _emailService.Send(
-                        model.Email,
-                        "Email Confirmation",
-                         $"""
-                            <h3>Your confirmation code is: <strong>{code}</strong></h3>
-
-                            <h4>Didn't receive a code?</h4>
-                            <a href="{resendCodeLink}"
-                               style="
-                                   background-color:blue;
-                                   color:white;
-                                   padding:10px 20px;
-                                   text-decoration:none;
-                                   border-radius:5px;
-                                   display:inline-block;">
-                                Resend Confirmation Code
-                            </a>
-                            """
-                        );
-
-                }
-
-                var manager = new Manager
-                {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    PersonalNumber = model.PersonalNumber,
-                    HotelId = model.HotelId,
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    ApplicationUserId = user.Id
-                };
-
-                await _managerService.CreateManagerAsync(manager);
-
-                return userToReturn.Id;
             }
-            else
+            await AddRoleAsync(user, _managerRole);
+            await SendConfirmationCodeAsync(user);
+
+
+            var manager = new Manager
             {
-                throw new BadRequestException(result.Errors.FirstOrDefault().Description);
-            }
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                PersonalNumber = model.PersonalNumber,
+                HotelId = model.HotelId,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                ApplicationUserId = user.Id
+            };
+
+            await _managerService.CreateManagerAsync(manager);
+
+
+
+            return user.Id;
         }
 
         public async Task ConfirmEmailAsync(ConfirmEmailDto model)
@@ -229,34 +165,8 @@ namespace HMS.Application.Service
             if (user.EmailConfirmed)
                 throw new BadRequestException("Email is already confirmed.");
 
-            var code = Random.Shared.Next(100000, 999999).ToString();
+                    await SendConfirmationCodeAsync(user);
 
-            await _redisService.SetAsync(
-                $"email-confirm:{user.Id}",
-                code,
-                TimeSpan.FromMinutes(5));
-
-            var resendCodeLink = $"https://localhost:7042/api/auth/resend-confirmation-code?email={email}";
-
-            await _emailService.Send(
-                user.Email,
-                "Email Confirmation",
-                 $"""
-                            <h3>Your confirmation code is: <strong>{code}</strong></h3>
-
-                            <h4>Didn't receive a code?</h4>
-                            <a href="{resendCodeLink}"
-                               style="
-                                   background-color:blue;
-                                   color:white;
-                                   padding:10px 20px;
-                                   text-decoration:none;
-                                   border-radius:5px;
-                                   display:inline-block;">
-                                Resend Confirmation Code
-                            </a>
-                            """
-                );
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto model)
@@ -274,7 +184,15 @@ namespace HMS.Application.Service
 
             bool isValid = await _userManager.CheckPasswordAsync(user, model.Password);
 
-            if (!isValid) throw new BadRequestException("Username or Password is Incorrect!");
+            if (!isValid)
+            {
+                await _userManager.AccessFailedAsync(user);
+                throw new BadRequestException("Username or Password is Incorrect!"); 
+            }
+            else
+            {
+                await _userManager.ResetAccessFailedCountAsync(user);
+            }
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -314,17 +232,90 @@ namespace HMS.Application.Service
                 $"refresh-token:{token}");
 
            var roles = await _userManager.GetRolesAsync(user);
-            var resp = await GenerateTokenPairAsync(user, roles);
+            
 
-            await _redisService.SetAsync(
-        $"refresh-token:{resp.RefreshToken  }",
-        user.Id,
-        TimeSpan.FromDays(
-            int.Parse(_configuration["Jwt:RefreshTokenExpiryDays"])));
+           
 
-            return resp;
+            return await GenerateTokenPairAsync(user, roles);
         }
 
+        public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
+        {
+            var user = _mapper.Map<ApplicationUser>(model);
 
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (!result.Succeeded)
+            {
+                throw new BadRequestException(
+       result.Errors.First().Description);
+
+            }
+                    await AddRoleAsync(user, _guestRole);
+                    await SendConfirmationCodeAsync(user);
+                
+
+                var guest = new Guest
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    PersonalNumber = model.PersonalNumber,
+                    Email = model.Email,
+                    PhoneNumber = model.PhoneNumber,
+                    ApplicationUserId = user.Id
+                };
+
+                await _guestService.CreateNewGuestAsync(guest);
+
+
+
+            return user.Id;
+        }
+
+        private async Task SendConfirmationCodeAsync(ApplicationUser user)
+        {
+            var code = Random.Shared.Next(100000, 999999).ToString();
+
+            await _redisService.SetAsync(
+                $"email-confirm:{user.Id}",
+                code,
+                TimeSpan.FromMinutes(5));
+
+            var resendCodeLink =
+                $"https://localhost:7042/api/auth/resend-confirmation-code?email={user.Email}";
+
+            await _emailService.Send(
+                user.Email,
+                "Email Confirmation",
+                $"""
+        <h3>Your confirmation code is: <strong>{code}</strong></h3>
+
+        <h4>Didn't receive a code?</h4>
+
+        <a href="{resendCodeLink}"
+           style="
+               background-color:blue;
+               color:white;
+               padding:10px 20px;
+               text-decoration:none;
+               border-radius:5px;
+               display:inline-block;">
+            Resend Confirmation Code
+        </a>
+        """);
+        }
+
+        private async Task AddRoleAsync(
+    ApplicationUser user,
+    string role)
+        {
+            if (!await _roleManager.RoleExistsAsync(role))
+            {
+                await _roleManager.CreateAsync(
+                    new IdentityRole(role));
+            }
+
+            await _userManager.AddToRoleAsync(user, role);
+        }
     }
 }

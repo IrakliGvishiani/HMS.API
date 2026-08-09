@@ -11,6 +11,8 @@ namespace HMS.Application.Contracts.Service
         Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model);
 
         Task<string> RegisterAdminAsync(AdminRegistrationRequestDto model);
+
+        Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model);
         Task ResendConfirmationCodeAsync(string email);
         Task ConfirmEmailAsync(ConfirmEmailDto model);
         Task<LoginResponseDto> LoginAsync(LoginRequestDto model);

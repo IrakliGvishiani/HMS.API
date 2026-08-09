@@ -85,5 +85,23 @@ namespace HMS.API
             }
         }
 
+        public sealed record GuestRegistrationRequestDtoExample : IExamplesProvider<GuestRegistrationRequestDto>
+        {
+            public GuestRegistrationRequestDto GetExamples()
+            {
+                return new GuestRegistrationRequestDto
+                {
+                    FirstName = "Ika",
+                    LastName = "gvisho",
+                    PersonalNumber = "12345678911",
+                    Email = "irakligvidhiani@gmail.com",
+                    Password = "Ika123456789!",
+                    PhoneNumber = "555101010",
+                    
+
+                };
+            }
+        }
+
     } 
 }

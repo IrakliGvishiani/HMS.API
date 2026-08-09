@@ -15,5 +15,7 @@ namespace HMS.Application.Contracts.Service
         Task<int> DeleteManagerAsync(int id);
 
         Task<IEnumerable<ManagerListForGettingDto>> GetManagersAsync();
+
+        Task<int> UpdateManagerAsync(ManagerForUpdatingDto model);
     }
 }

@@ -10,5 +10,7 @@ namespace HMS.Domain.Entities
         public Manager Manager { get; set; }
 
         public Admin Admin { get; set; }
+
+        public Guest Guest { get; set; }
     }
 }

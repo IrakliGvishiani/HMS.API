@@ -1,4 +1,5 @@
 ﻿using HMS.Application.Contracts.Service;
+using HMS.Application.Models.ManagerDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -15,6 +16,16 @@ namespace HMS.API.Controllers
         public ManagerController(IManagerService managerService)
         {
             _managerService = managerService;
+        }
+
+        [HttpPut]
+        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> UpdateManager([FromBody] ManagerForUpdatingDto model)
+        {
+            var result = await _managerService.UpdateManagerAsync(model);
+            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
+            return StatusCode(resp.HttpStatusCode, resp);
         }
 
         [HttpDelete]

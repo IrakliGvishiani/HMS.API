@@ -26,7 +26,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateAdmin([FromBody] AdminRegistrationRequestDto request)
         {
             var admin = await _authService.RegisterAdminAsync(request);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, admin, true, Convert.ToInt32(HttpStatusCode.OK));
+            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, admin, true, Convert.ToInt32(HttpStatusCode.Created));
             return StatusCode(resp.HttpStatusCode, resp);
         }
 
@@ -36,7 +36,16 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateManager([FromBody] ManagerRegistrationRequestDto request)
         {
             var manager = await _authService.RegisterManagerAsync(request);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, manager, true, Convert.ToInt32(HttpStatusCode.OK));
+            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, manager, true, Convert.ToInt32(HttpStatusCode.Created));
+            return StatusCode(resp.HttpStatusCode, resp);
+        }
+
+        [HttpPost("register-guest")]
+        [SwaggerRequestExample(typeof(GuestRegistrationRequestDto), typeof(GuestRegistrationRequestDtoExample))]
+        public async Task<IActionResult> CreateGuest([FromBody] GuestRegistrationRequestDto request)
+        {
+            var guest = await _authService.RegisterGuestAsync(request);
+            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, guest, true, Convert.ToInt32(HttpStatusCode.Created));
             return StatusCode(resp.HttpStatusCode, resp);
         }
 

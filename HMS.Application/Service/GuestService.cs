@@ -1,0 +1,63 @@
+﻿using HMS.Application.Contracts.Persistance;
+using HMS.Application.Contracts.Service;
+using HMS.Application.Exceptions;
+using HMS.Application.Models.GuestDtos;
+using HMS.Domain.Entities;
+using MapsterMapper;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace HMS.Application.Service
+{
+    public class GuestService : IGuestService
+    {
+        private readonly IGuestRepository _guestRepository;
+        private readonly IMapper _mapper;
+
+        public GuestService(IGuestRepository guestRepository, IMapper mapper)
+        {
+            _guestRepository = guestRepository;
+            _mapper = mapper;
+        }
+
+        public async Task<GuestForGettingDto> CreateNewGuestAsync(Guest model)
+        {
+            if (model == null) throw new BadRequestException("Model is required");
+
+            if (string.IsNullOrEmpty(model.FirstName))
+                throw new BadRequestException("First name is required");
+
+            if (model.FirstName.Length < 2 || model.FirstName.Length > 100)
+                throw new BadRequestException("First name must be between 2 and 100 characters");
+
+            if (string.IsNullOrEmpty(model.LastName))
+                throw new BadRequestException("Last name is required");
+
+            if (model.LastName.Length < 2 || model.LastName.Length > 100)
+                throw new BadRequestException("Last name must be between 2 and 100 characters");
+
+            if (string.IsNullOrEmpty(model.PersonalNumber))
+                throw new BadRequestException("Personal number is required");
+
+            if (model.PersonalNumber.Length != 11)
+                throw new BadRequestException("Personal number must be 11 characters long");
+
+            if (string.IsNullOrEmpty(model.PhoneNumber))
+                throw new BadRequestException("Phone number is required");
+            if (model.PhoneNumber.Length != 9)
+                throw new BadRequestException("Phone number must be 9 characters long");
+
+            if (string.IsNullOrEmpty(model.Email))
+                throw new BadRequestException("Email is required");
+            if (!model.Email.Contains("@"))
+                throw new BadRequestException("Invalid email format");
+
+            await _guestRepository.AddAsync(model);
+            await _guestRepository.SaveAsync();
+
+            return _mapper.Map<GuestForGettingDto>(model);
+
+        }
+    }
+}

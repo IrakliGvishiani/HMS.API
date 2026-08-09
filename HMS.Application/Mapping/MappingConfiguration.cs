@@ -1,4 +1,5 @@
 ﻿using HMS.Application.Models.AuthDtos;
+using HMS.Application.Models.GuestDtos;
 using HMS.Application.Models.HotelDtos;
 using HMS.Application.Models.ManagerDtos;
 
@@ -47,6 +48,17 @@ namespace HMS.Application.Mapping
                 .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
                 .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
                 .Map(dest => dest.Email, src => src.Email);
+
+            config.NewConfig<GuestRegistrationRequestDto, ApplicationUser>()
+                .Map(dest => dest.UserName, src => src.Email)
+                .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
+                .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
+                .Map(dest => dest.Email, src => src.Email);
+
+            // GUEST MAPPING
+            config.NewConfig<GuestRegistrationRequestDto, Guest>();
+            config.NewConfig<Guest, GuestForGettingDto>();
+
         }
     }
 }
