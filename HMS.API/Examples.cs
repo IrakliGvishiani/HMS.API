@@ -1,4 +1,5 @@
 ﻿using HMS.Application.Models.AuthDtos;
+using HMS.Application.Models.GuestDtos;
 using HMS.Application.Models.HotelDtos;
 using HMS.Application.Models.RoomDtos;
 using Swashbuckle.AspNetCore.Filters;
@@ -98,6 +99,22 @@ namespace HMS.API
                     Password = "Ika123456789!",
                     PhoneNumber = "555101010",
                     
+
+                };
+            }
+        }
+
+        public sealed record GuestForUpdatingDtoExample : IExamplesProvider<GuestForUpdatingDto>
+        {
+            public GuestForUpdatingDto GetExamples()
+            {
+                return new GuestForUpdatingDto
+                {
+                    Id = 3,
+                    FirstName = "Updated Ika",
+                    LastName = "Updated gvisho",
+                    PersonalNumber = "12345678911",
+                    PhoneNumber = "555101010",
 
                 };
             }

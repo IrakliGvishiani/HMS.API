@@ -5,6 +5,8 @@ using HMS.Application.Models.AuthDtos;
 using HMS.Application.Models.ManagerDtos;
 using HMS.Domain.Entities;
 using MapsterMapper;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,13 +17,16 @@ namespace HMS.Application.Service
     {
         private readonly IManagerRepository managerRepository;
         private readonly IHotelService hotelService;
+        private readonly UserManager<ApplicationUser> userManager;
         private readonly IMapper mapper;
 
-        public ManagerService(IManagerRepository managerRepository, IHotelService hotelService, IMapper mapper)
+        public ManagerService(IManagerRepository managerRepository, IHotelService hotelService, IMapper mapper,
+            UserManager<ApplicationUser> userManager)
         {
             this.managerRepository = managerRepository;
             this.hotelService = hotelService;
             this.mapper = mapper;
+            this.userManager = userManager;
         }
         public async Task<int> CreateManagerAsync(Manager model)
         {
@@ -70,7 +75,8 @@ namespace HMS.Application.Service
 
         public async Task<int> DeleteManagerAsync(int id)
         {
-            var manager = await managerRepository.GetAsync(s => s.Id == id);
+            var manager = await managerRepository.GetAsync(s => s.Id == id,
+                include: query => query.Include(x => x.ApplicationUser));
             if (manager == null)
                 throw new NotFoundException("Manager not found");
 
@@ -82,8 +88,20 @@ namespace HMS.Application.Service
                 throw new BadRequestException(
                     "Manager cannot be deleted because this hotel must have at least one manager.");
 
+            var applicationUser = manager.ApplicationUser;
 
             managerRepository.Remove(manager);
+
+            if(applicationUser != null)
+            {
+               var result = await userManager.DeleteAsync(applicationUser);
+
+                if (!result.Succeeded)
+                {
+                    throw new BadRequestException(
+                        result.Errors.First().Description);
+                }
+            }
             await managerRepository.SaveAsync();
             return id;
         }

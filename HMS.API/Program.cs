@@ -100,7 +100,7 @@ namespace HMS.API
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<IGuestService, GuestService>();
-
+            builder.Services.AddScoped<CommonResponse>();
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -108,6 +108,7 @@ namespace HMS.API
             builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<IGuestRepository, GuestRepository>();
+            builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

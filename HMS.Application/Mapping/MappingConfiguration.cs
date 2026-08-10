@@ -58,6 +58,8 @@ namespace HMS.Application.Mapping
             // GUEST MAPPING
             config.NewConfig<GuestRegistrationRequestDto, Guest>();
             config.NewConfig<Guest, GuestForGettingDto>();
+            config.NewConfig<GuestForUpdatingDto, Guest>();
+            config.NewConfig<GuestForGettingDto, GuestForUpdatingDto>();
 
         }
     }

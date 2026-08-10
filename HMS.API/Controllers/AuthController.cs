@@ -16,9 +16,11 @@ namespace HMS.API.Controllers
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService)
+        private readonly CommonResponse _commonResponse;
+        public AuthController(IAuthService authService, CommonResponse commonResponse)
         {
             _authService = authService;
+            _commonResponse = commonResponse;
         }
 
         [HttpPost("register-admin")]
@@ -26,7 +28,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateAdmin([FromBody] AdminRegistrationRequestDto request)
         {
             var admin = await _authService.RegisterAdminAsync(request);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, admin, true, Convert.ToInt32(HttpStatusCode.Created));
+            var resp = _commonResponse.Created(admin);
             return StatusCode(resp.HttpStatusCode, resp);
         }
 
@@ -36,7 +38,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateManager([FromBody] ManagerRegistrationRequestDto request)
         {
             var manager = await _authService.RegisterManagerAsync(request);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, manager, true, Convert.ToInt32(HttpStatusCode.Created));
+            var resp = _commonResponse.Created(manager);
             return StatusCode(resp.HttpStatusCode, resp);
         }
 
@@ -45,7 +47,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateGuest([FromBody] GuestRegistrationRequestDto request)
         {
             var guest = await _authService.RegisterGuestAsync(request);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, guest, true, Convert.ToInt32(HttpStatusCode.Created));
+            var resp = _commonResponse.Created(guest);
             return StatusCode(resp.HttpStatusCode, resp);
         }
 
@@ -69,14 +71,38 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDto model)
         {
             var response = await _authService.LoginAsync(model);
-            return Ok(new CommonResponse(CommonResponseMessage.SuccessMessage, response, true, Convert.ToInt32(HttpStatusCode.OK)));
+            var resp = _commonResponse.Success(response);
+            return StatusCode(resp.HttpStatusCode,resp);
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] string token)
         {
             var response = await _authService.RefreshTokenAsync(token);
-            return Ok(new CommonResponse(CommonResponseMessage.SuccessMessage, response, true, Convert.ToInt32(HttpStatusCode.OK)));
+            var resp = _commonResponse.Success(response);
+            return StatusCode(resp.HttpStatusCode, resp);
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(
+    [FromBody] ForgotPasswordDto model)
+        {
+            await _authService.ForgotPasswordAsync(model.Email);
+
+            var resp = _commonResponse.Success(null);
+
+            return StatusCode(resp.HttpStatusCode, resp);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+    [FromBody] ResetPasswordDto model)
+        {
+            await _authService.ResetPasswordAsync(model);
+
+            var resp = _commonResponse.Success(null);
+
+            return StatusCode(resp.HttpStatusCode, resp);
         }
     }
 }

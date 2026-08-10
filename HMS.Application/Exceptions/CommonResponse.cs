@@ -28,7 +28,7 @@ public class CommonResponse
 
   
 
-    public static CommonResponse Success(object result)
+    public  CommonResponse Success(object result)
     {
         return new CommonResponse(
             CommonResponseMessage.SuccessMessage,
@@ -42,7 +42,7 @@ public class CommonResponse
         public static string SuccessMessage { get; } = "Request processed successfully.";
     }
 
-    public static CommonResponse Created(object result)
+    public  CommonResponse Created(object result)
     {
         return new CommonResponse(
             "Created successfully.",
@@ -51,7 +51,7 @@ public class CommonResponse
             StatusCodes.Status201Created);
     }
 
-    public static CommonResponse BadRequest(string message)
+    public  CommonResponse BadRequest(string message)
     {
         return new CommonResponse(
             message,
@@ -60,7 +60,7 @@ public class CommonResponse
             StatusCodes.Status400BadRequest);
     }
 
-    public static CommonResponse NotFound(string message)
+    public  CommonResponse NotFound(string message)
     {
         return new CommonResponse(
             message,

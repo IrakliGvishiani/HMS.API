@@ -4,6 +4,7 @@ using HMS.Application.Models.AuthDtos;
 using HMS.Domain.Entities;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using MoviesApi.Application.Models.Notification;
 using System;
@@ -238,6 +239,62 @@ namespace HMS.Application.Service
 
             return await GenerateTokenPairAsync(user, roles);
         }
+        public async Task ForgotPasswordAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+                throw new NotFoundException("User not found.");
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var encodedToken = WebEncoders.Base64UrlEncode(
+                Encoding.UTF8.GetBytes(token));
+
+            var resetLink =
+                $"https://localhost:7042/api/auth/reset-password" +
+                $"?email={Uri.EscapeDataString(user.Email)}" +
+                $"&token={Uri.EscapeDataString(encodedToken)}";
+
+            await _emailService.Send(
+                user.Email,
+                "Reset Password",
+                 $"Your Password Reset Token is: " +
+                 $"{encodedToken}");
+        }
+
+
+        public async Task ResetPasswordAsync(ResetPasswordDto model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+                throw new NotFoundException("User not found.");
+
+            string token;
+
+            try
+            {
+                token = Encoding.UTF8.GetString(
+                    WebEncoders.Base64UrlDecode(model.Token));
+            }
+            catch
+            {
+                throw new BadRequestException("Invalid reset token.");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(
+                user,
+                token,
+                model.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                throw new BadRequestException(
+                    result.Errors.First().Description);
+            }
+        }
+
 
         public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
         {
@@ -317,5 +374,7 @@ namespace HMS.Application.Service
 
             await _userManager.AddToRoleAsync(user, role);
         }
+
+       
     }
 }

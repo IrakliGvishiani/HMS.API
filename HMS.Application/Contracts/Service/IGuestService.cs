@@ -1,4 +1,5 @@
-﻿using HMS.Application.Models.GuestDtos;
+﻿using HMS.Application.Models.Common;
+using HMS.Application.Models.GuestDtos;
 using HMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -10,5 +11,9 @@ namespace HMS.Application.Contracts.Service
     {
 
         Task<GuestForGettingDto> CreateNewGuestAsync(Guest model);
+
+        Task<GuestForGettingDto> UpdateGuestAsync(GuestForUpdatingDto model);
+
+        Task<int> DeleteGuestAsync(int id);
     }
 }
