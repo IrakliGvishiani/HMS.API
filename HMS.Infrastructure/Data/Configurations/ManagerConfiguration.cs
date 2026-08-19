@@ -21,23 +21,6 @@ namespace HMS.Infrastructure.Data.Configurations
                    .IsRequired()
                    .HasMaxLength(50);
 
-            builder.Property(x => x.Email)
-                   .IsRequired()
-                   .HasMaxLength(100);
-
-            builder.Property(x => x.PersonalNumber)
-                   .IsRequired()
-                   .HasMaxLength(11);
-
-            builder.HasIndex(x => x.Email)
-                   .IsUnique();
-
-            builder.HasIndex(x => x.PersonalNumber)
-                   .IsUnique();
-
-            builder.Property(x => x.PhoneNumber)
-                .IsRequired()
-                .HasMaxLength(20);
 
             builder.HasOne(x => x.ApplicationUser)
        .WithOne(x => x.Manager)

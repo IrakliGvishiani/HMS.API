@@ -1,8 +1,11 @@
+using FluentValidation;
+
 using HMS.API.Middleware;
 using HMS.Application.Contracts.Persistance;
 using HMS.Application.Contracts.Service;
 using HMS.Application.Mapping;
 using HMS.Application.Service;
+
 using HMS.Domain.Entities;
 using HMS.Infrastructure.Data;
 using HMS.Infrastructure.Persistance;
@@ -17,6 +20,7 @@ using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 using Swashbuckle.AspNetCore.Filters;
 using System.Text;
+
 
 namespace HMS.API
 {
@@ -85,7 +89,9 @@ namespace HMS.API
             builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
 
 
+ 
 
+         
 
 
             // SERVICES
@@ -101,6 +107,7 @@ namespace HMS.API
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<IGuestService, GuestService>();
             builder.Services.AddScoped<CommonResponse>();
+            builder.Services.AddScoped<IReservationService, ReservationService>();
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -109,6 +116,14 @@ namespace HMS.API
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<IGuestRepository, GuestRepository>();
             builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+
+            //OTHER
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            
+
+
+
+
 
             // IDENTITY
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

@@ -16,6 +16,7 @@ namespace HMS.Domain.Entities
 
         public Guest Guest { get; set; }
 
-        public IEnumerable<ReservationRoom> ReservationRooms { get; set; }
+        public ICollection<ReservationRoom> ReservationRooms { get; set; }
+     = new List<ReservationRoom>();
     }
 }

@@ -1,4 +1,5 @@
-﻿using HMS.Application.Contracts.Service;
+﻿using HMS.Application.Contracts.Persistance;
+using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
 using HMS.Application.Models.AuthDtos;
 using HMS.Domain.Entities;
@@ -10,6 +11,7 @@ using MoviesApi.Application.Models.Notification;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace HMS.Application.Service
 {
@@ -24,11 +26,24 @@ namespace HMS.Application.Service
         private readonly IEmailService _emailService;
         private readonly IAdminService _adminService;
         private readonly IGuestService _guestService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         private const string _adminRole = "Admin";
         private const string _managerRole = "Manager";
         private const string _guestRole = "Guest";
+
+        private static readonly Regex EmailRegex = new Regex(
+            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+            RegexOptions.Compiled);
+
+        private static readonly Regex PhoneRegex = new Regex(
+            @"^\+995\d{9}$",
+            RegexOptions.Compiled);
+
+        private static readonly Regex PersonalNumberRegex = new Regex(
+            @"^\d{11}$",
+            RegexOptions.Compiled);
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
@@ -40,6 +55,7 @@ namespace HMS.Application.Service
             IEmailService emailService,
             IAdminService adminService,
             IGuestService guestService,
+            IUnitOfWork unitOfWork,
             IMapper mapper
             )
         {
@@ -52,80 +68,215 @@ namespace HMS.Application.Service
             _emailService = emailService;
             _adminService = adminService;
             _guestService = guestService;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
 
         public async Task<string> RegisterAdminAsync(AdminRegistrationRequestDto model)
         {
-            var user = _mapper.Map<ApplicationUser>(model);
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            if (string.IsNullOrEmpty(model.PersonalNumber))
+                throw new BadRequestException("Personal number is required");
 
-            if (!result.Succeeded)
+            if (model.PersonalNumber.Length != 11)
+                throw new BadRequestException("Personal number must be 11 characters long");
+
+            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                throw new BadRequestException("Personal number must contain only digits");
+
+            if (string.IsNullOrEmpty(model.Email))
+                throw new BadRequestException("Email is required");
+
+            if (!EmailRegex.IsMatch(model.Email))
+                throw new BadRequestException("Invalid email format");
+
+            if (string.IsNullOrEmpty(model.PhoneNumber))
+                throw new BadRequestException("Phone number is required");
+
+            if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                throw new BadRequestException("Phone number must be 9 characters long");
+
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
             {
-                throw new BadRequestException(
-       result.Errors.First().Description);
+                var user = _mapper.Map<ApplicationUser>(model);
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (!result.Succeeded)
+                {
+                    throw new BadRequestException(
+           result.Errors.First().Description);
+
+                }
+
+                var admin = new Admin
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    ApplicationUserId = user.Id
+                };
+
+                await _adminService.CreateAdminAsync(admin);
+
+                await AddRoleAsync(user, _adminRole);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                await SendConfirmationCodeAsync(user);
+
+                return user.Id;
 
             }
-            await AddRoleAsync(user, _adminRole);
-            await SendConfirmationCodeAsync(user);
-
-
-            var admin = new Admin
+            catch
             {
-                FirstName = model.FirstName,
-                LastName = model.LastName,
-                PersonalNumber = model.PersonalNumber,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                ApplicationUserId = user.Id
-            };
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
 
-            await _adminService.CreateAdminAsync(admin);
-
-
-
-            return user.Id;
+            
+  
         }
         public async Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model)
         {
-            var user = _mapper.Map<ApplicationUser>(model);
+
+            if (string.IsNullOrEmpty(model.PersonalNumber))
+                throw new BadRequestException("Personal number is required");
+
+            if (model.PersonalNumber.Length != 11)
+                throw new BadRequestException("Personal number must be 11 characters long");
+
+            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                throw new BadRequestException("Personal number must contain only digits");
+
+            if (string.IsNullOrEmpty(model.Email))
+                throw new BadRequestException("Email is required");
+
+            if (!EmailRegex.IsMatch(model.Email))
+                throw new BadRequestException("Invalid email format");
+
+            if (string.IsNullOrEmpty(model.PhoneNumber))
+                throw new BadRequestException("Phone number is required");
+
+            if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                throw new BadRequestException("Phone number must be 9 characters long");
+
+            await _unitOfWork.BeginTransactionAsync();
 
 
-
-            var result = await _userManager.CreateAsync(user, model.Password);
-
-
-
-            if (!result.Succeeded)
+            try
             {
-                throw new BadRequestException(
-       result.Errors.First().Description);
+                var user = _mapper.Map<ApplicationUser>(model);
+
+
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+
+
+                if (!result.Succeeded)
+                {
+                    throw new BadRequestException(
+           result.Errors.First().Description);
+
+                }
+                var manager = new Manager
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    HotelId = model.HotelId,
+                    ApplicationUserId = user.Id
+                };
+
+                await _managerService.CreateManagerAsync(manager);
+
+                await AddRoleAsync(user, _managerRole);
+
+                await _unitOfWork.CommitTransactionAsync();
+                await SendConfirmationCodeAsync(user);
+
+                return user.Id;
 
             }
-            await AddRoleAsync(user, _managerRole);
-            await SendConfirmationCodeAsync(user);
-
-
-            var manager = new Manager
+            catch
             {
-                FirstName = model.FirstName,
-                LastName = model.LastName,
-                PersonalNumber = model.PersonalNumber,
-                HotelId = model.HotelId,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                ApplicationUserId = user.Id
-            };
-
-            await _managerService.CreateManagerAsync(manager);
-
-
-
-            return user.Id;
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        
+    
         }
 
+        public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
+        {
+
+            if (string.IsNullOrEmpty(model.PersonalNumber))
+                throw new BadRequestException("Personal number is required");
+
+            if (model.PersonalNumber.Length != 11)
+                throw new BadRequestException("Personal number must be 11 characters long");
+
+            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                throw new BadRequestException("Personal number must contain only digits");
+
+            if (string.IsNullOrEmpty(model.Email))
+                throw new BadRequestException("Email is required");
+
+            if (!EmailRegex.IsMatch(model.Email))
+                throw new BadRequestException("Invalid email format");
+
+            if (string.IsNullOrEmpty(model.PhoneNumber))
+                throw new BadRequestException("Phone number is required");
+
+
+            if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                throw new BadRequestException("Phone number must be 9 characters long");
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var user = _mapper.Map<ApplicationUser>(model);
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (!result.Succeeded)
+                {
+                    throw new BadRequestException(
+           result.Errors.First().Description);
+
+                }
+
+
+                var guest = new Guest
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    ApplicationUserId = user.Id
+                };
+
+                await _guestService.CreateNewGuestAsync(guest);
+
+                await AddRoleAsync(user, _guestRole);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                await SendConfirmationCodeAsync(user);
+
+                return user.Id;
+
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+
+        }
         public async Task ConfirmEmailAsync(ConfirmEmailDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -201,19 +352,7 @@ namespace HMS.Application.Service
         }
 
 
-        private async Task<LoginResponseDto> GenerateTokenPairAsync(ApplicationUser user, IList<string> roles)
-        {
-            var accessToken = _jwtTokenGenerator.GenerateToken(user, roles);
 
-            var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
-
-            await _redisService.SetAsync(
-                $"refresh-token:{refreshToken}",
-                user.Id,
-                TimeSpan.FromDays(int.Parse(_configuration["Jwt:RefreshTokenExpiryDays"])));
-
-            return new LoginResponseDto { AccessToken = accessToken, RefreshToken = refreshToken };
-        }
 
         public async Task<LoginResponseDto> RefreshTokenAsync(string token)
         {
@@ -296,37 +435,18 @@ namespace HMS.Application.Service
         }
 
 
-        public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
+        private async Task<LoginResponseDto> GenerateTokenPairAsync(ApplicationUser user, IList<string> roles)
         {
-            var user = _mapper.Map<ApplicationUser>(model);
+            var accessToken = _jwtTokenGenerator.GenerateToken(user, roles);
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
 
-            if (!result.Succeeded)
-            {
-                throw new BadRequestException(
-       result.Errors.First().Description);
+            await _redisService.SetAsync(
+                $"refresh-token:{refreshToken}",
+                user.Id,
+                TimeSpan.FromDays(int.Parse(_configuration["Jwt:RefreshTokenExpiryDays"])));
 
-            }
-                    await AddRoleAsync(user, _guestRole);
-                    await SendConfirmationCodeAsync(user);
-                
-
-                var guest = new Guest
-                {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    PersonalNumber = model.PersonalNumber,
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    ApplicationUserId = user.Id
-                };
-
-                await _guestService.CreateNewGuestAsync(guest);
-
-
-
-            return user.Id;
+            return new LoginResponseDto { AccessToken = accessToken, RefreshToken = refreshToken };
         }
 
         private async Task SendConfirmationCodeAsync(ApplicationUser user)

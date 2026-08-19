@@ -2,6 +2,8 @@
 using HMS.Application.Models.GuestDtos;
 using HMS.Application.Models.HotelDtos;
 using HMS.Application.Models.ManagerDtos;
+using HMS.Application.Models.ReservationDtos;
+
 
 //using HMS.Application.Models.ManagerDtos;
 using HMS.Application.Models.RoomDtos;
@@ -41,25 +43,35 @@ namespace HMS.Application.Mapping
                 .Map(dest => dest.UserName, src => src.Email)
                 .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
                 .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
-                .Map(dest => dest.Email, src => src.Email);
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
+                .Map(dest => dest.PersonalNumber, src => src.PersonalNumber);
 
             config.NewConfig<AdminRegistrationRequestDto, ApplicationUser>()
                 .Map(dest => dest.UserName, src => src.Email)
                 .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
                 .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
-                .Map(dest => dest.Email, src => src.Email);
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
+                .Map(dest => dest.PersonalNumber, src => src.PersonalNumber);
 
             config.NewConfig<GuestRegistrationRequestDto, ApplicationUser>()
                 .Map(dest => dest.UserName, src => src.Email)
                 .Map(dest => dest.NormalizedUserName, src => src.Email.ToUpper())
                 .Map(dest => dest.NormalizedEmail, src => src.Email.ToUpper())
-                .Map(dest => dest.Email, src => src.Email);
+                .Map(dest => dest.Email, src => src.Email)
+                .Map(dest => dest.PhoneNumber, src => src.PhoneNumber)
+                .Map(dest => dest.PersonalNumber, src => src.PersonalNumber);
 
             // GUEST MAPPING
             config.NewConfig<GuestRegistrationRequestDto, Guest>();
             config.NewConfig<Guest, GuestForGettingDto>();
             config.NewConfig<GuestForUpdatingDto, Guest>();
             config.NewConfig<GuestForGettingDto, GuestForUpdatingDto>();
+
+
+            //RESERVATION MAPPING
+            config.NewConfig<ReservationForGettingDto,Reservation>();
 
         }
     }

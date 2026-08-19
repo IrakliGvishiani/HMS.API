@@ -1,4 +1,5 @@
-﻿using HMS.Application.Contracts.Service;
+﻿
+using HMS.Application.Contracts.Service;
 using HMS.Application.Models.AuthDtos;
 using HMS.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -28,8 +29,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateAdmin([FromBody] AdminRegistrationRequestDto request)
         {
             var admin = await _authService.RegisterAdminAsync(request);
-            var resp = _commonResponse.Created(admin);
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(admin));
         }
 
         [Authorize(Roles = "Admin")]
@@ -38,8 +38,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateManager([FromBody] ManagerRegistrationRequestDto request)
         {
             var manager = await _authService.RegisterManagerAsync(request);
-            var resp = _commonResponse.Created(manager);
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Created(manager));
         }
 
         [HttpPost("register-guest")]
@@ -56,7 +55,7 @@ namespace HMS.API.Controllers
         {
             await _authService.ConfirmEmailAsync(model);
 
-            return Ok(new CommonResponse(CommonResponseMessage.SuccessMessage, null, true, Convert.ToInt32(HttpStatusCode.OK)));
+            return this.ToActionResult(_commonResponse.Success(null));
         }
 
         [HttpGet("resend-confirmation-code")]
@@ -64,23 +63,22 @@ namespace HMS.API.Controllers
         {
             await _authService.ResendConfirmationCodeAsync(email);
 
-            return Ok(new CommonResponse(CommonResponseMessage.SuccessMessage, null, true, Convert.ToInt32(HttpStatusCode.OK)));
+            return this.ToActionResult(_commonResponse.Success(null));
         }
 
         [HttpPost("login")]
+        [SwaggerRequestExample(typeof(LoginRequestDto),typeof(LoginRequestDtoExample))]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto model)
         {
             var response = await _authService.LoginAsync(model);
-            var resp = _commonResponse.Success(response);
-            return StatusCode(resp.HttpStatusCode,resp);
+            return this.ToActionResult(_commonResponse.Success(response));
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] string token)
         {
             var response = await _authService.RefreshTokenAsync(token);
-            var resp = _commonResponse.Success(response);
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(response));
         }
 
         [HttpPost("forgot-password")]
@@ -89,9 +87,7 @@ namespace HMS.API.Controllers
         {
             await _authService.ForgotPasswordAsync(model.Email);
 
-            var resp = _commonResponse.Success(null);
-
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(null));
         }
 
         [HttpPost("reset-password")]
@@ -100,9 +96,7 @@ namespace HMS.API.Controllers
         {
             await _authService.ResetPasswordAsync(model);
 
-            var resp = _commonResponse.Success(null);
-
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(null));
         }
     }
 }

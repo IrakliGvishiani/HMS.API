@@ -120,5 +120,19 @@ namespace HMS.API
             }
         }
 
-    } 
+        public sealed record LoginRequestDtoExample : IExamplesProvider<LoginRequestDto> {
+
+            public LoginRequestDto GetExamples() {
+
+                return new LoginRequestDto
+                {
+                    UserName = "irakligvidhiani@gmail.com",
+                    Password = "Ika123456789!"
+                };
+            }
+        
+        }
+
+
+    }
 }

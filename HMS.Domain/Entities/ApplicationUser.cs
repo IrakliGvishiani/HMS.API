@@ -7,6 +7,7 @@ namespace HMS.Domain.Entities
 {
     public class ApplicationUser : IdentityUser
     {
+        public string PersonalNumber { get; set; }
         public Manager Manager { get; set; }
 
         public Admin Admin { get; set; }

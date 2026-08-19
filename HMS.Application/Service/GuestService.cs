@@ -46,21 +46,6 @@ namespace HMS.Application.Service
             if (model.LastName.Length < 2 || model.LastName.Length > 100)
                 throw new BadRequestException("Last name must be between 2 and 100 characters");
 
-            if (string.IsNullOrEmpty(model.PersonalNumber))
-                throw new BadRequestException("Personal number is required");
-
-            if (model.PersonalNumber.Length != 11)
-                throw new BadRequestException("Personal number must be 11 characters long");
-
-            if (string.IsNullOrEmpty(model.PhoneNumber))
-                throw new BadRequestException("Phone number is required");
-            if (model.PhoneNumber.Length != 9)
-                throw new BadRequestException("Phone number must be 9 characters long");
-
-            if (string.IsNullOrEmpty(model.Email))
-                throw new BadRequestException("Email is required");
-            if (!model.Email.Contains("@"))
-                throw new BadRequestException("Invalid email format");
 
             await _guestRepository.AddAsync(model);
             await _guestRepository.SaveAsync();
@@ -135,12 +120,17 @@ namespace HMS.Application.Service
                 throw new BadRequestException("Phone number is required");
             if (model.PhoneNumber.Length != 9)
                 throw new BadRequestException("Phone number must be 9 characters long");
-            var guest = await _guestRepository.GetAsync(s => s.Id == model.Id);
+            var guest = await _guestRepository.GetAsync(s => s.Id == model.Id,
+                include: query => query.Include(x => x.ApplicationUser));
             if (guest == null)
                 throw new NotFoundException("Guest not found");
 
-            _mapper.Map(model, guest);
-             _guestRepository.Update(guest);
+            //_mapper.Map(model, guest);
+            //_guestRepository.Update(guest);
+            guest.FirstName = model.FirstName;
+            guest.LastName = model.LastName;
+            guest.ApplicationUser.PersonalNumber = model.PersonalNumber;
+            guest.ApplicationUser.PhoneNumber = model.PhoneNumber;
             await _guestRepository.SaveAsync();
 
             return _mapper.Map<GuestForGettingDto>(guest);
