@@ -16,10 +16,11 @@ namespace HMS.API.Controllers
     public class RoomController : Controller
     {
         private readonly IRoomService _roomService;
-
-        public RoomController(IRoomService roomService)
+        private readonly CommonResponse _commonResponse;
+        public RoomController(IRoomService roomService,CommonResponse commonResponse)
         {
             _roomService = roomService;
+            _commonResponse = commonResponse;
         }
 
         [Authorize(Roles = "Manager")]
@@ -30,8 +31,7 @@ namespace HMS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _roomService.CreateRoomAsync(model, userId);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.Created));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Created(result));
         }
 
         [HttpPut]
@@ -41,16 +41,14 @@ namespace HMS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _roomService.UpdateRoomAsync(model, userId);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
 
         [HttpGet("search")]
         public async Task<IActionResult> SearchRooms([FromQuery] SearchRoomDto model)
         {
             var result = await _roomService.SearchRoomsAsync(model);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
 
 
@@ -61,16 +59,14 @@ namespace HMS.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _roomService.DeleteRoomAsync(id, userId);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.NoContent());
         }
 
         [HttpGet("{hotelId}")]
         public async Task<IActionResult> GetRoomsByHotelId(int hotelId)
         {
             var result = await _roomService.GetRoomsByHotelIdAsync(hotelId);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
     }
 }

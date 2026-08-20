@@ -96,8 +96,6 @@ namespace HMS.Application.Service
                 CheckInDate = reservation.CheckInDate,
                 CheckOutDate = reservation.CheckOutDate,
                 GuestId= reservation.GuestId,
-                
-
             };
             
         }

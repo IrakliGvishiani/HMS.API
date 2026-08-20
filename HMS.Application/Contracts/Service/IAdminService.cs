@@ -8,5 +8,7 @@ namespace HMS.Application.Contracts.Service
     public interface IAdminService
     {
         Task<int> CreateAdminAsync(Admin model);
+
+        Task<int> DeleteAdminAsync(int id,string userId);
     }
 }

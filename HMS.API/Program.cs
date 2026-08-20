@@ -116,6 +116,7 @@ namespace HMS.API
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<IGuestRepository, GuestRepository>();
             builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+            builder.Services.AddScoped<IApplicationUserRepository, ApplicationUserRepository>();
 
             //OTHER
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

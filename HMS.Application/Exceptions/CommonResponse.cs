@@ -68,4 +68,14 @@ public class CommonResponse
             false,
             StatusCodes.Status404NotFound);
     }
+
+    public CommonResponse NoContent()
+    {
+        return new CommonResponse(
+            "No Content",
+            null,
+            true,
+            StatusCodes.Status204NoContent
+            );
+    }
 }

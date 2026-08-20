@@ -21,18 +21,19 @@ namespace HMS.API.Controllers
     public class HotelController : Controller
     {
         private readonly IHotelService _hotelService;
+        private readonly CommonResponse _commonResponse;
 
-        public HotelController(IHotelService hotelService)
+        public HotelController(IHotelService hotelService,CommonResponse commonResponse)
         {
             _hotelService = hotelService;
+            _commonResponse = commonResponse;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetHotelList([FromQuery] PagedRequestDto parameters)
         {
             var hotels = await _hotelService.GetHotelListAsync(parameters);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, hotels, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(hotels));
         }
 
         [HttpPost]
@@ -41,17 +42,14 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> CreateNewHotel([FromBody] HotelForCreatingDto model)
         {
             var result = await _hotelService.CreateNewHotelAsync(model);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.Created));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetHotel(int id)
         {
             var hotel = await _hotelService.GetHotelAsync(id);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, hotel, true, Convert.ToInt32(HttpStatusCode.OK));
-
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(hotel));
         }
 
 
@@ -61,8 +59,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> UpdateHotel([FromBody] HotelForUpdatingDto model)
         {
             var result = await _hotelService.UpdateHotelAsync(model);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
 
         [HttpDelete("{id}")]
@@ -70,8 +67,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> DeleteHotel(int id)
         {
             var result = await _hotelService.DeleteHotelAsync(id);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.NoContent());
         }
     }
 }

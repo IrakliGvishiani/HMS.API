@@ -12,10 +12,12 @@ namespace HMS.API.Controllers
     public class ManagerController : Controller
     {
         private readonly IManagerService _managerService;
+        private readonly CommonResponse _commonResponse;
 
-        public ManagerController(IManagerService managerService)
+        public ManagerController(IManagerService managerService,CommonResponse commonResponse)
         {
             _managerService = managerService;
+            _commonResponse = commonResponse;
         }
 
         [HttpPut]
@@ -24,8 +26,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> UpdateManager([FromBody] ManagerForUpdatingDto model)
         {
             var result = await _managerService.UpdateManagerAsync(model);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
 
         [HttpDelete]
@@ -33,8 +34,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> DeleteManager([FromRoute] int id)
         {
             var result = await _managerService.DeleteManagerAsync(id);
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.NoContent());
         }
 
         [HttpGet]
@@ -42,8 +42,7 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> GetAllManagers()
         {
             var result = await _managerService.GetManagersAsync();
-            var resp = new CommonResponse(CommonResponseMessage.SuccessMessage, result, true, Convert.ToInt32(HttpStatusCode.OK));
-            return StatusCode(resp.HttpStatusCode, resp);
+            return this.ToActionResult(_commonResponse.Success(result));
         }
     }
 }

@@ -2,6 +2,8 @@
 using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
 using HMS.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,10 +15,15 @@ namespace HMS.Application.Service
     {
 
         private readonly IAdminRepository _adminRepository;
+        private readonly IApplicationUserRepository _applicationUserRepository;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public AdminService(IAdminRepository adminRepository)
+        public AdminService(IAdminRepository adminRepository, IApplicationUserRepository applicationUserRepository,
+            UserManager<ApplicationUser> userManager)
         {
             _adminRepository = adminRepository;
+            _applicationUserRepository = applicationUserRepository;
+            _userManager = userManager;
         }
 
 
@@ -41,6 +48,47 @@ namespace HMS.Application.Service
             await _adminRepository.AddAsync(model);
             
             return model.Id;
+        }
+
+        public async Task<int> DeleteAdminAsync(int id,string userId)
+        {
+
+            var admin = await _adminRepository.GetAsync(x => x.Id == id,
+                include: query => query.Include(x => x.ApplicationUser));
+
+            if (admin == null) throw new NotFoundException("Admin not found!");
+         
+            var adminUser = await _userManager.FindByIdAsync(userId);
+
+            if (adminUser == null) throw new NotFoundException("User Not Found!");
+
+            var hasAnotherAdmin = await _adminRepository.ExistsAsync(
+                x => x.Id != admin.Id
+                );
+
+            if (!hasAnotherAdmin)
+                throw new BadRequestException("Admin cannot be deleted because this hotel must have at least one Admin");
+
+            if (admin.ApplicationUserId != adminUser.Id)
+                throw new BadRequestException("You Can't Delete Another Admin");
+
+            var applicationUser = admin.ApplicationUser;
+
+            _adminRepository.Remove(admin);
+
+            if(applicationUser != null)
+            {
+               var result = await _userManager.DeleteAsync(applicationUser);
+
+                if (!result.Succeeded)
+                {
+                    throw new BadRequestException(
+                       result.Errors.First().Description);
+                }
+            }
+
+            await _adminRepository.SaveAsync();
+            return id;
         }
     }
 }

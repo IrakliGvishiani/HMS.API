@@ -73,9 +73,10 @@ namespace HMS.Application.Service
         }
 
 
+        #region Register Admin
         public async Task<string> RegisterAdminAsync(AdminRegistrationRequestDto model)
         {
-
+            await _unitOfWork.BeginTransactionAsync();
             if (string.IsNullOrEmpty(model.PersonalNumber))
                 throw new BadRequestException("Personal number is required");
 
@@ -95,10 +96,8 @@ namespace HMS.Application.Service
                 throw new BadRequestException("Phone number is required");
 
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
-                throw new BadRequestException("Phone number must be 9 characters long");
+                throw new BadRequestException("Phone number must be +995XXXXXXXXX format");
 
-
-            await _unitOfWork.BeginTransactionAsync();
 
             try
             {
@@ -137,12 +136,15 @@ namespace HMS.Application.Service
                 throw;
             }
 
-            
-  
+
+
         }
+        #endregion
+
+        #region Register Manager
         public async Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model)
         {
-
+            await _unitOfWork.BeginTransactionAsync();
             if (string.IsNullOrEmpty(model.PersonalNumber))
                 throw new BadRequestException("Personal number is required");
 
@@ -164,7 +166,7 @@ namespace HMS.Application.Service
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
                 throw new BadRequestException("Phone number must be 9 characters long");
 
-            await _unitOfWork.BeginTransactionAsync();
+
 
 
             try
@@ -206,13 +208,15 @@ namespace HMS.Application.Service
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }
-        
-    
-        }
 
+
+        }
+        #endregion
+
+        #region Register Guest
         public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
         {
-
+            await _unitOfWork.BeginTransactionAsync();
             if (string.IsNullOrEmpty(model.PersonalNumber))
                 throw new BadRequestException("Personal number is required");
 
@@ -235,7 +239,7 @@ namespace HMS.Application.Service
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
                 throw new BadRequestException("Phone number must be 9 characters long");
 
-            await _unitOfWork.BeginTransactionAsync();
+
 
             try
             {
@@ -277,6 +281,9 @@ namespace HMS.Application.Service
 
 
         }
+        #endregion
+
+        #region Confirm Email
         public async Task ConfirmEmailAsync(ConfirmEmailDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -306,7 +313,9 @@ namespace HMS.Application.Service
 
             await _redisService.RemoveAsync(key);
         }
+        #endregion
 
+        #region Resend Confirmation Email
         public async Task ResendConfirmationCodeAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -317,10 +326,12 @@ namespace HMS.Application.Service
             if (user.EmailConfirmed)
                 throw new BadRequestException("Email is already confirmed.");
 
-                    await SendConfirmationCodeAsync(user);
+            await SendConfirmationCodeAsync(user);
 
         }
+        #endregion
 
+        #region Login
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto model)
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
@@ -331,7 +342,7 @@ namespace HMS.Application.Service
             if (!user.EmailConfirmed)
                 throw new BadRequestException("Email is not confirmed.");
 
-            if(await _userManager.IsLockedOutAsync(user))
+            if (await _userManager.IsLockedOutAsync(user))
                 throw new BadRequestException("Your account is locked.");
 
             bool isValid = await _userManager.CheckPasswordAsync(user, model.Password);
@@ -339,7 +350,7 @@ namespace HMS.Application.Service
             if (!isValid)
             {
                 await _userManager.AccessFailedAsync(user);
-                throw new BadRequestException("Username or Password is Incorrect!"); 
+                throw new BadRequestException("Username or Password is Incorrect!");
             }
             else
             {
@@ -350,10 +361,11 @@ namespace HMS.Application.Service
 
             return await GenerateTokenPairAsync(user, roles);
         }
+        #endregion
 
 
 
-
+        #region Refresh Token
         public async Task<LoginResponseDto> RefreshTokenAsync(string token)
         {
             var userId = await _redisService.GetAsync(
@@ -367,17 +379,20 @@ namespace HMS.Application.Service
             if (user == null)
                 throw new NotFoundException("User not found.");
 
-           
+
             await _redisService.RemoveAsync(
                 $"refresh-token:{token}");
 
-           var roles = await _userManager.GetRolesAsync(user);
-            
+            var roles = await _userManager.GetRolesAsync(user);
 
-           
+
+
 
             return await GenerateTokenPairAsync(user, roles);
         }
+        #endregion
+
+        #region Forgot Password
         public async Task ForgotPasswordAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -401,8 +416,10 @@ namespace HMS.Application.Service
                  $"Your Password Reset Token is: " +
                  $"{encodedToken}");
         }
+        #endregion
 
 
+        #region Reset Password
         public async Task ResetPasswordAsync(ResetPasswordDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -433,8 +450,10 @@ namespace HMS.Application.Service
                     result.Errors.First().Description);
             }
         }
+        #endregion
 
 
+        #region Generate Tokens(private)
         private async Task<LoginResponseDto> GenerateTokenPairAsync(ApplicationUser user, IList<string> roles)
         {
             var accessToken = _jwtTokenGenerator.GenerateToken(user, roles);
@@ -448,7 +467,10 @@ namespace HMS.Application.Service
 
             return new LoginResponseDto { AccessToken = accessToken, RefreshToken = refreshToken };
         }
+        #endregion
 
+
+        #region Send Confirmation Code(private)
         private async Task SendConfirmationCodeAsync(ApplicationUser user)
         {
             var code = Random.Shared.Next(100000, 999999).ToString();
@@ -481,10 +503,12 @@ namespace HMS.Application.Service
         </a>
         """);
         }
+        #endregion
 
+        #region Add Role(private)
         private async Task AddRoleAsync(
-    ApplicationUser user,
-    string role)
+ApplicationUser user,
+string role)
         {
             if (!await _roleManager.RoleExistsAsync(role))
             {
@@ -495,6 +519,8 @@ namespace HMS.Application.Service
             await _userManager.AddToRoleAsync(user, role);
         }
 
-       
+        #endregion
+
+
     }
 }
