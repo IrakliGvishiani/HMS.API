@@ -23,8 +23,8 @@ namespace HMS.API.Controllers
             _commonResponse = commonResponse;
         }
 
-        [Authorize(Roles = "Manager")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Manager,Admin")]
+        
         [HttpPost]
         [SwaggerRequestExample(typeof(RoomForCreatingDto), typeof(RoomForCreatingDtoExample))]
         public async Task<IActionResult> CreateRoom([FromBody] RoomForCreatingDto model)
@@ -35,8 +35,8 @@ namespace HMS.API.Controllers
         }
 
         [HttpPut]
-        [Authorize(Roles = "Manager")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Manager,Admin")]
+        
         public async Task<IActionResult> UpdateRoom([FromBody] RoomForUpdatingDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -53,8 +53,8 @@ namespace HMS.API.Controllers
 
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Manager")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Manager,Admin")]
+    
         public async Task<IActionResult> DeleteRoom(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

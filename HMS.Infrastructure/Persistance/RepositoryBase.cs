@@ -89,5 +89,14 @@ namespace HMS.Infrastructure.Persistance
         public void RemoveRange(IEnumerable<T> entities) => _dbSet.RemoveRange(entities);
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate) => await _dbSet.AnyAsync(predicate);
         public async Task<int> SaveAsync(CancellationToken cancellationToken = default) => await _context.SaveChangesAsync(cancellationToken);
+
+        public async Task<int> CountAsync(
+    Expression<Func<T, bool>> predicate = null)
+        {
+            if (predicate == null)
+                return await _dbSet.CountAsync();
+
+            return await _dbSet.CountAsync(predicate);
+        }
     }
 }

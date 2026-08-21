@@ -1,4 +1,5 @@
-﻿using HMS.Application.Models.AuthDtos;
+﻿using HMS.Application.Models.Analytics;
+using HMS.Application.Models.AuthDtos;
 using HMS.Application.Models.ManagerDtos;
 using HMS.Domain.Entities;
 using System;
@@ -17,5 +18,7 @@ namespace HMS.Application.Contracts.Service
         Task<IEnumerable<ManagerListForGettingDto>> GetManagersAsync();
 
         Task<int> UpdateManagerAsync(ManagerForUpdatingDto model);
+
+        Task<HotelAnalyticsDto> GetManagerAnalyticsAsync(string id);
     }
 }

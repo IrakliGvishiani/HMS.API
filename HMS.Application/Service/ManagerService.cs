@@ -1,6 +1,7 @@
 ﻿using HMS.Application.Contracts.Persistance;
 using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
+using HMS.Application.Models.Analytics;
 using HMS.Application.Models.AuthDtos;
 using HMS.Application.Models.ManagerDtos;
 using HMS.Domain.Entities;
@@ -19,6 +20,9 @@ namespace HMS.Application.Service
     {
         private readonly IManagerRepository managerRepository;
         private readonly IHotelService hotelService;
+        private readonly IRoomRepository roomRepository;
+        private readonly IReservationRoomRepository reservationRoomRepository;
+        private readonly IReservationRepository reservationRepository;
         private readonly UserManager<ApplicationUser> userManager;
         private readonly IMapper mapper;
 
@@ -31,12 +35,18 @@ namespace HMS.Application.Service
             RegexOptions.Compiled);
 
         public ManagerService(IManagerRepository managerRepository, IHotelService hotelService, IMapper mapper,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IRoomRepository roomRepository,
+            IReservationRoomRepository reservationRoomRepository,
+            IReservationRepository reservationRepository)
         {
             this.managerRepository = managerRepository;
             this.hotelService = hotelService;
             this.mapper = mapper;
             this.userManager = userManager;
+            this.roomRepository = roomRepository;
+            this.reservationRoomRepository = reservationRoomRepository;
+            this.reservationRepository = reservationRepository;
         }
         public async Task<int> CreateManagerAsync(Manager model)
         {
@@ -152,6 +162,109 @@ namespace HMS.Application.Service
 
             await managerRepository.SaveAsync();
             return manager.Id;
+        }
+
+        public async Task<HotelAnalyticsDto> GetManagerAnalyticsAsync(string id)
+        {
+            var manager = await managerRepository.GetAsync(
+                x => x.ApplicationUserId == id
+                );
+            var now = DateTime.UtcNow;
+
+            if (manager == null) throw new NotFoundException("Manager not found!");
+
+            var hotelId = manager.HotelId;
+
+            var totalRooms = await roomRepository.CountAsync(
+                x => x.HotelId == hotelId
+                );
+
+
+
+            var (occupiedReservationRooms, _) = await reservationRoomRepository.GetAllAsync(
+                filter: x => 
+                x.Room.HotelId == hotelId &&
+                x.Reservation.CheckInDate <= now && 
+                x.Reservation.CheckOutDate > now,
+                tracking: false
+                );
+
+            var occupiedRooms = occupiedReservationRooms
+            .Select(x => x.RoomId)
+            .Distinct()
+            .Count();
+
+            var availableRooms = totalRooms - occupiedRooms;
+
+            var totalReservations = await reservationRepository.CountAsync(
+                x => x.ReservationRooms.Any(
+                    r => r.Room.HotelId == hotelId
+                    )
+                );
+
+            var activeReservations = await reservationRepository.CountAsync(
+                x =>
+                x.ReservationRooms.Any(
+                    r => r.Room.HotelId == hotelId && 
+                    r.Reservation.CheckInDate <= now &&
+                    r.Reservation.CheckOutDate > now
+                    )
+                
+                );
+
+            var completedReservations = await reservationRepository.CountAsync(
+                x => 
+                x.ReservationRooms.Any(
+                    r => r.Room.HotelId == hotelId
+                    ) && 
+                    x.CheckOutDate <= now
+                );
+
+            var (reservations, _) = await reservationRepository.GetAllAsync(
+                filter: x => x.ReservationRooms.Any(
+                    r => r.Room.HotelId == hotelId
+                    ),
+                tracking: false
+                );
+
+            var totalGuests = reservations.Select(
+                x => x.GuestId
+                )
+                .Distinct()
+                .Count();
+
+            var (reservationRooms, _) = await reservationRoomRepository.GetAllAsync(
+                filter: x => x.Room.HotelId == hotelId,
+                tracking: false,
+                includes: new Expression<Func<ReservationRoom, object>>[]
+                {
+                    r => r.Reservation,
+                    r => r.Room
+                }
+                );
+
+            double totalRevenue = reservationRooms.Sum(
+                x =>
+                {
+                    var nights = (x.Reservation.CheckOutDate - x.Reservation.CheckInDate).Days;
+
+                    return x.Room.Price * nights;
+                }
+                );
+
+            return new HotelAnalyticsDto
+            {
+                HotelId = hotelId,
+                TotalRooms = totalRooms,
+                AvailableRooms = availableRooms,
+                OccupiedRooms = occupiedRooms,
+                TotalReservations = totalReservations,
+                ActiveReservations = activeReservations,
+                CompletedReservations = completedReservations,
+                TotalGuests = totalGuests,
+                TotalRevenue = totalRevenue
+            };
+
         }
     }
 }

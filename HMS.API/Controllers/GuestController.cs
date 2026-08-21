@@ -45,7 +45,7 @@ namespace HMS.API.Controllers
 
         [HttpPost("create-reservation")]
         [Authorize(Roles = "Guest")]
-        public async Task<IActionResult> CreateReservation([FromForm]
+        public async Task<IActionResult> CreateReservation([FromBody]
     ReservationForCreatingDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

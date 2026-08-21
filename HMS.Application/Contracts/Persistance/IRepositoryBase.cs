@@ -25,6 +25,9 @@ namespace HMS.Application.Contracts.Persistance
         void Update(T entity);
         void RemoveRange(IEnumerable<T> entities);
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+
+        Task<int> CountAsync(
+    Expression<Func<T, bool>> predicate = null);
     }
 
 }

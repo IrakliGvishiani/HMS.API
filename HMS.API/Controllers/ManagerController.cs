@@ -3,6 +3,7 @@ using HMS.Application.Models.ManagerDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Security.Claims;
 using static CommonResponse;
 
 namespace HMS.API.Controllers
@@ -42,6 +43,16 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> GetAllManagers()
         {
             var result = await _managerService.GetManagersAsync();
+            return this.ToActionResult(_commonResponse.Success(result));
+        }
+
+        [HttpGet("hotel-analytics")]
+        [Authorize(Roles = "Manager")]
+
+        public async Task<IActionResult> GetHotelAnalytics()
+        {
+            var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _managerService.GetManagerAnalyticsAsync(user);
             return this.ToActionResult(_commonResponse.Success(result));
         }
     }
