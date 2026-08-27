@@ -61,7 +61,8 @@ namespace HMS.API.Controllers
 
         public async Task<IActionResult> UpdateReservation([FromBody] ReservationForUpdatingDto model)
         {
-            var reservation = await _reservationService .UpdateReservationAsync(model);
+            var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var reservation = await _reservationService .UpdateReservationAsync(model,user);
             return this.ToActionResult(_commonResponse.Success(reservation));
         }
 

@@ -73,6 +73,13 @@ namespace HMS.Application.Mapping
             //RESERVATION MAPPING
             config.NewConfig<ReservationForGettingDto,Reservation>();
 
+
+            //ADMIN
+            config.NewConfig<Admin, AdminForGettingDto>()
+                .Map(dest => dest.Email, src => src.ApplicationUser.Email)
+                .Map(dest => dest.PersonalNumber, src => src.ApplicationUser.PersonalNumber)
+                .Map(dest => dest.PhoneNumber, src => src.ApplicationUser.PhoneNumber);
+
         }
     }
 }

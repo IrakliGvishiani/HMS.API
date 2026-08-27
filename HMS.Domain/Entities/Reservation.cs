@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+using HMS.Domain.Enum;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -12,6 +14,7 @@ namespace HMS.Domain.Entities
 
         public DateTime CheckOutDate { get; set; }
 
+        public ReservationStatus Status { get; set; }
         public int GuestId { get; set; }
 
         public Guest Guest { get; set; }

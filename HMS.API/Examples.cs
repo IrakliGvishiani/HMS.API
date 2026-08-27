@@ -57,12 +57,12 @@ namespace HMS.API
                 {
                     return new ManagerRegistrationRequestDto
                     {
-                        FirstName = "Ika",
-                        LastName = "gvisho",
+                        FirstName = "Irakli",
+                        LastName = "gvishiani",
                         PersonalNumber = "12345678911",
                         Email = "irakligvidhiani@gmail.com",
-                        Password = "Ika123456789!",
-                        PhoneNumber = "555101010",
+                        Password = "Rame123456789!",
+                        PhoneNumber = "+995555101010",
                         HotelId = 2002
                     };
     }
@@ -75,12 +75,12 @@ namespace HMS.API
             {
                 return new AdminRegistrationRequestDto
                 {
-                    FirstName = "Ika",
-                    LastName = "gvisho",
+                    FirstName = "irakli",
+                    LastName = "gvishiani",
                     PersonalNumber = "12345678911",
                     Email = "irakligvidhiani@gmail.com",
-                    Password = "Ika123456789!",
-                    PhoneNumber = "555101010"
+                    Password = "Rame123456789!",
+                    PhoneNumber = "+995555101010"
                     
                 };
             }
@@ -92,12 +92,12 @@ namespace HMS.API
             {
                 return new GuestRegistrationRequestDto
                 {
-                    FirstName = "Ika",
-                    LastName = "gvisho",
+                    FirstName = "Irakli",
+                    LastName = "gvishiani",
                     PersonalNumber = "12345678911",
                     Email = "irakligvidhiani@gmail.com",
-                    Password = "Ika123456789!",
-                    PhoneNumber = "555101010",
+                    Password = "Rame123456789!",
+                    PhoneNumber = "+995555101010",
                     
 
                 };
@@ -111,10 +111,10 @@ namespace HMS.API
                 return new GuestForUpdatingDto
                 {
                     Id = 3,
-                    FirstName = "Updated Ika",
-                    LastName = "Updated gvisho",
+                    FirstName = "Updated irakli",
+                    LastName = "Updated lastname",
                     PersonalNumber = "12345678911",
-                    PhoneNumber = "555101010",
+                    PhoneNumber = "+995555101010",
 
                 };
             }
@@ -127,7 +127,7 @@ namespace HMS.API
                 return new LoginRequestDto
                 {
                     UserName = "irakligvidhiani@gmail.com",
-                    Password = "Ika123456789!"
+                    Password = "Rame123456789!"
                 };
             }
         

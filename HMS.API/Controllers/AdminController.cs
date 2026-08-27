@@ -25,5 +25,13 @@ namespace HMS.API.Controllers
             var admin = await _adminService.DeleteAdminAsync(id, userId);
             return this.ToActionResult(_commonResponse.NoContent());
         }
+
+        [HttpGet]
+
+        public async Task<IActionResult> GetAllAdmin()
+        {
+            var admins = await _adminService.GetAllAdminAsync();
+            return this.ToActionResult(_commonResponse.Success(admins));
+        }
     }
 }

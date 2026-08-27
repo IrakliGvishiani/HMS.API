@@ -12,11 +12,15 @@ namespace HMS.Application.Models.Analytics
 
         public int AvailableRooms { get; set; }
 
+        public int ReservedRooms { get; set; }
+
         public int OccupiedRooms { get; set; }
 
         public int TotalReservations { get; set; }
 
         public int ActiveReservations { get; set; }
+
+        public int CancelledReservations { get; set; }
 
         public int CompletedReservations { get; set; }
 

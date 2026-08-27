@@ -5,6 +5,7 @@ using HMS.Application.Models.Analytics;
 using HMS.Application.Models.AuthDtos;
 using HMS.Application.Models.ManagerDtos;
 using HMS.Domain.Entities;
+using HMS.Domain.Enum;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -180,7 +181,7 @@ namespace HMS.Application.Service
                 );
 
 
-
+            /// CURRENTLY OCCUPIED
             var (occupiedReservationRooms, _) = await reservationRoomRepository.GetAllAsync(
                 filter: x => 
                 x.Room.HotelId == hotelId &&
@@ -194,7 +195,22 @@ namespace HMS.Application.Service
             .Distinct()
             .Count();
 
-            var availableRooms = totalRooms - occupiedRooms;
+
+            ///FUTURE RESERVED ROOMS
+            var (reservedReservationRooms, _) =
+    await reservationRoomRepository.GetAllAsync(
+        filter: rr =>
+            rr.Room.HotelId == hotelId &&
+            rr.Reservation.CheckInDate > now,
+        tracking: false);
+
+            var reservedRooms = reservedReservationRooms
+                .Select(x => x.RoomId)
+                .Distinct()
+                .Count();
+
+            ///CURRENTLY AVAILABLE ROOMS
+            var availableRooms = totalRooms - occupiedRooms - occupiedRooms;
 
             var totalReservations = await reservationRepository.CountAsync(
                 x => x.ReservationRooms.Any(
@@ -202,23 +218,32 @@ namespace HMS.Application.Service
                     )
                 );
 
-            var activeReservations = await reservationRepository.CountAsync(
+            ///ACTIVE
+            var activeReservations =
+            await reservationRepository.CountAsync(
                 x =>
-                x.ReservationRooms.Any(
-                    r => r.Room.HotelId == hotelId && 
-                    r.Reservation.CheckInDate <= now &&
-                    r.Reservation.CheckOutDate > now
-                    )
-                
-                );
+            x.ReservationRooms.Any(
+                rr => rr.Room.HotelId == hotelId) &&
+            x.Status == ReservationStatus.Active);
 
-            var completedReservations = await reservationRepository.CountAsync(
-                x => 
-                x.ReservationRooms.Any(
-                    r => r.Room.HotelId == hotelId
-                    ) && 
-                    x.CheckOutDate <= now
-                );
+
+            //.COMPLETED
+            var completedReservations =
+                await reservationRepository.CountAsync(
+                    x =>
+            x.ReservationRooms.Any(
+                rr => rr.Room.HotelId == hotelId) &&
+            x.Status == ReservationStatus.Completed);
+
+
+            ///CANCELLED
+            var cancelledReservations =
+                await reservationRepository.CountAsync(
+                    x =>
+            x.ReservationRooms.Any(
+                rr => rr.Room.HotelId == hotelId) &&
+            x.Status == ReservationStatus.Cancelled);
+
 
             var (reservations, _) = await reservationRepository.GetAllAsync(
                 filter: x => x.ReservationRooms.Any(
@@ -243,7 +268,7 @@ namespace HMS.Application.Service
                 }
                 );
 
-            double totalRevenue = reservationRooms.Sum(
+            var totalRevenue = reservationRooms.Sum(
                 x =>
                 {
                     var nights = (x.Reservation.CheckOutDate - x.Reservation.CheckInDate).Days;
@@ -257,6 +282,7 @@ namespace HMS.Application.Service
                 HotelId = hotelId,
                 TotalRooms = totalRooms,
                 AvailableRooms = availableRooms,
+                ReservedRooms = reservedRooms,
                 OccupiedRooms = occupiedRooms,
                 TotalReservations = totalReservations,
                 ActiveReservations = activeReservations,

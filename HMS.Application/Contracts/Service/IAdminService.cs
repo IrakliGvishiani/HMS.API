@@ -1,4 +1,5 @@
-﻿using HMS.Domain.Entities;
+﻿using HMS.Application.Models.AuthDtos;
+using HMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,5 +11,7 @@ namespace HMS.Application.Contracts.Service
         Task<int> CreateAdminAsync(Admin model);
 
         Task<int> DeleteAdminAsync(int id,string userId);
+
+        Task<IEnumerable<AdminForGettingDto>> GetAllAdminAsync();
     }
 }

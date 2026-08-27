@@ -1,5 +1,5 @@
 using FluentValidation;
-
+using HMS.API.Jobs;
 using HMS.API.Middleware;
 using HMS.Application.Contracts.Persistance;
 using HMS.Application.Contracts.Service;
@@ -39,7 +39,11 @@ namespace HMS.API
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-             // MAPSTER 
+            // BACKGROUND SERVICES
+            builder.Services.AddHostedService<ReservationStatusUpdaterService>();
+
+
+            // MAPSTER 
             var config = TypeAdapterConfig.GlobalSettings;
             config.Scan(typeof(MappingConfiguration).Assembly);
 
@@ -184,6 +188,11 @@ namespace HMS.API
             app.UseAuthentication();    
             app.UseAuthorization();
             app.MapControllers();
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                context.Database.Migrate();
+            }
             app.Run();
         }
     }

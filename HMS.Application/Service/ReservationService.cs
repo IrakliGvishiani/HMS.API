@@ -3,6 +3,7 @@ using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
 using HMS.Application.Models.ReservationDtos;
 using HMS.Domain.Entities;
+using HMS.Domain.Enum;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -73,6 +74,7 @@ namespace HMS.Application.Service
                 CheckInDate = model.CheckInDate,
                 CheckOutDate = model.CheckOutDate,
                 GuestId = guest.Id,
+                Status = ReservationStatus.Reserved,
                 ReservationRooms = new List<ReservationRoom>()
             };
 
@@ -118,8 +120,8 @@ namespace HMS.Application.Service
                 throw new BadRequestException(
                     "You cannot delete another guest's reservation.");
 
-            _reservationRepository.Remove(reservation);
-
+            reservation.Status = ReservationStatus.Cancelled;
+            _reservationRepository.Update(reservation);
             await _reservationRepository.SaveAsync();
 
             return id;
@@ -176,7 +178,7 @@ namespace HMS.Application.Service
                 reservations);
         }
 
-        public async Task<int> UpdateReservationAsync(ReservationForUpdatingDto model)
+        public async Task<int> UpdateReservationAsync(ReservationForUpdatingDto model,string userId)
         {
             if (model.CheckInDate.Date < DateTime.UtcNow.Date)
                 throw new BadRequestException(
@@ -191,7 +193,16 @@ namespace HMS.Application.Service
                 include: query => query.Include(x => x.ReservationRooms)
                 );
 
+            var user = await _guestRepository.GetAsync(
+                x => x.ApplicationUserId == userId
+                );
+
+            if (user == null) throw new NotFoundException("User not found!");
+          
+
             if (reservation == null) throw new NotFoundException("Reservation Not Found!");
+
+            if (reservation.GuestId != user.Id) throw new NotAllowedException("You Can't Update another guest's reservation");
 
             var roomIds = reservation.ReservationRooms.Select(x => x.RoomId).ToList();
 

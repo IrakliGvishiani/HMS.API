@@ -1,7 +1,9 @@
 ﻿using HMS.Application.Contracts.Persistance;
 using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
+using HMS.Application.Models.AuthDtos;
 using HMS.Domain.Entities;
+using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -16,14 +18,17 @@ namespace HMS.Application.Service
 
         private readonly IAdminRepository _adminRepository;
         private readonly IApplicationUserRepository _applicationUserRepository;
+        private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public AdminService(IAdminRepository adminRepository, IApplicationUserRepository applicationUserRepository,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IMapper mapper)
         {
             _adminRepository = adminRepository;
             _applicationUserRepository = applicationUserRepository;
             _userManager = userManager;
+            _mapper = mapper;
         }
 
 
@@ -89,6 +94,16 @@ namespace HMS.Application.Service
 
             await _adminRepository.SaveAsync();
             return id;
+        }
+
+        public async Task<IEnumerable<AdminForGettingDto>> GetAllAdminAsync()
+        {
+            var admins = await _adminRepository.GetAllAsync(
+                includes: x => x.ApplicationUser);
+
+            return _mapper.Map<IEnumerable<AdminForGettingDto>>(admins.Items);
+
+            
         }
     }
 }

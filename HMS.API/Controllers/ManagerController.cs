@@ -22,15 +22,14 @@ namespace HMS.API.Controllers
         }
 
         [HttpPut]
-        [Authorize(Roles = "Admin")]
-        [Authorize(Roles = "Manager")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateManager([FromBody] ManagerForUpdatingDto model)
         {
             var result = await _managerService.UpdateManagerAsync(model);
             return this.ToActionResult(_commonResponse.Success(result));
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteManager([FromRoute] int id)
         {
