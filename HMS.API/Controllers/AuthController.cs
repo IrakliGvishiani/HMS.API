@@ -98,5 +98,13 @@ namespace HMS.API.Controllers
 
             return this.ToActionResult(_commonResponse.Success(null));
         }
+
+        [HttpPost("revoke-token")]
+        public async Task<IActionResult> RevokeToken([FromBody] string refreshToken)
+        {
+            await _authService.RevokeTokenAsync(refreshToken);
+
+            return this.ToActionResult(_commonResponse.Success(null));
+        }
     }
 }

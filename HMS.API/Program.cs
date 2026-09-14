@@ -179,7 +179,7 @@ namespace HMS.API
             });
 
             var app = builder.Build();
-
+            app.MapGet("/health", () => Results.Ok("Healthy"));
             // Configure the HTTP request pipeline.
             app.UseMiddleware<ErrorHandlingMiddleware>();
             app.UseSwagger();

@@ -316,6 +316,7 @@ namespace HMS.Application.Service
         #endregion
 
         #region Resend Confirmation Email
+
         public async Task ResendConfirmationCodeAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -326,8 +327,44 @@ namespace HMS.Application.Service
             if (user.EmailConfirmed)
                 throw new BadRequestException("Email is already confirmed.");
 
+            var normalizedEmail = email.Trim().ToLower();
+
+            var redisKey = $"confirmation-resend:{normalizedEmail}";
+
+            var cooldown = await _redisService.GetAsync(redisKey);
+
+            if (cooldown != null)
+                throw new BadRequestException(
+                    "Please wait 60 seconds before requesting a new confirmation code."
+                );
+
+            var hourlyKey = $"confirmation-resend-hourly:{normalizedEmail}";
+
+            var hourlyCountString = await _redisService.GetAsync(hourlyKey);
+
+            var hourlyCount = 0;
+
+            if (hourlyCountString != null)
+                hourlyCount = int.Parse(hourlyCountString);
+
+            if (hourlyCount >= 5)
+                throw new BadRequestException(
+                    "You have reached the maximum number of confirmation code requests. Please try again later."
+                );
+
             await SendConfirmationCodeAsync(user);
 
+            await _redisService.SetAsync(
+                redisKey,
+                "1",
+                TimeSpan.FromSeconds(60)
+            );
+
+            await _redisService.SetAsync(
+            hourlyKey,
+            (hourlyCount + 1).ToString(),
+            TimeSpan.FromHours(1)
+);
         }
         #endregion
 
@@ -362,7 +399,6 @@ namespace HMS.Application.Service
             return await GenerateTokenPairAsync(user, roles);
         }
         #endregion
-
 
 
         #region Refresh Token
@@ -452,7 +488,17 @@ namespace HMS.Application.Service
         }
         #endregion
 
+        public async Task RevokeTokenAsync(string refreshToken)
+        {
+            var storedToken = await _redisService.GetAsync(
+                $"refresh-token:{refreshToken}");
 
+            if (string.IsNullOrEmpty(storedToken))
+                throw new BadRequestException("Invalid or expired refresh token.");
+
+            await _redisService.RemoveAsync(
+                $"refresh-token:{refreshToken}");
+        }
         #region Generate Tokens(private)
         private async Task<LoginResponseDto> GenerateTokenPairAsync(ApplicationUser user, IList<string> roles)
         {
@@ -479,9 +525,9 @@ namespace HMS.Application.Service
                 $"email-confirm:{user.Id}",
                 code,
                 TimeSpan.FromMinutes(5));
-
+            var baseUrl = _configuration["AppSettings:BaseUrl"];
             var resendCodeLink =
-                $"https://localhost:7042/api/auth/resend-confirmation-code?email={user.Email}";
+                $"{baseUrl}/api/auth/resend-confirmation-code?email={user.Email}";
 
             await _emailService.Send(
                 user.Email,
@@ -519,7 +565,11 @@ string role)
             await _userManager.AddToRoleAsync(user, role);
         }
 
+
         #endregion
+
+
+
 
 
     }

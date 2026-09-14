@@ -22,5 +22,7 @@ namespace HMS.Application.Contracts.Service
         Task ResetPasswordAsync(ResetPasswordDto model);
 
         Task<LoginResponseDto> RefreshTokenAsync(string token);
+
+        Task RevokeTokenAsync(string refreshToken);
     }
 }

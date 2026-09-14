@@ -95,7 +95,7 @@ namespace HMS.Application.Service
             await _adminRepository.SaveAsync();
             return id;
         }
-
+        #region Get All Admin
         public async Task<IEnumerable<AdminForGettingDto>> GetAllAdminAsync()
         {
             var admins = await _adminRepository.GetAllAsync(
@@ -103,7 +103,9 @@ namespace HMS.Application.Service
 
             return _mapper.Map<IEnumerable<AdminForGettingDto>>(admins.Items);
 
-            
+
         }
+        #endregion
+
     }
 }

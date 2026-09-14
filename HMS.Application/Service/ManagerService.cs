@@ -210,7 +210,7 @@ namespace HMS.Application.Service
                 .Count();
 
             ///CURRENTLY AVAILABLE ROOMS
-            var availableRooms = totalRooms - occupiedRooms - occupiedRooms;
+            var availableRooms = totalRooms - occupiedRooms - reservedRooms;
 
             var totalReservations = await reservationRepository.CountAsync(
                 x => x.ReservationRooms.Any(
