@@ -25,7 +25,9 @@ services:
       - Redis__ConnectionString=redis:6379
 
       - JWT__Secret=${JWT_SECRET}
-
+      - EmailSettings__SmtpServer=smtp.gmail.com
+      - EmailSettings__Port=465
+      - EmailSettings__UseSsl=true
       - EmailSettings__Sender=${SMTP_USERNAME}
       - EmailSettings__UserName=${SMTP_USERNAME}
       - EmailSettings__Password=${SMTP_PASSWORD}
