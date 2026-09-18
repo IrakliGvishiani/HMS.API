@@ -6,6 +6,7 @@ using HMS.Domain.Entities;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MoviesApi.Application.Models.Notification;
 using System;
@@ -98,6 +99,14 @@ namespace HMS.Application.Service
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
                 throw new BadRequestException("Phone number must be +995XXXXXXXXX format");
 
+            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))  
+                throw new BadRequestException("A user with this personal number already exists");
+            
+            if(await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                throw new BadRequestException("A user with this email already exists");
+            
+            if(await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                throw new BadRequestException("A user with this phone number already exists");
 
             try
             {
@@ -166,6 +175,14 @@ namespace HMS.Application.Service
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
                 throw new BadRequestException("Phone number must be 9 characters long");
 
+            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
+                throw new BadRequestException("A user with this personal number already exists");
+
+            if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                throw new BadRequestException("A user with this email already exists");
+
+            if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                throw new BadRequestException("A user with this phone number already exists");
 
 
 
@@ -239,6 +256,14 @@ namespace HMS.Application.Service
             if (!PhoneRegex.IsMatch(model.PhoneNumber))
                 throw new BadRequestException("Phone number must be 9 characters long");
 
+            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
+                throw new BadRequestException("A user with this personal number already exists");
+
+            if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                throw new BadRequestException("A user with this email already exists");
+
+            if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                throw new BadRequestException("A user with this phone number already exists");
 
 
             try
