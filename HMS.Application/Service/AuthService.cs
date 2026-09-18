@@ -77,39 +77,40 @@ namespace HMS.Application.Service
         #region Register Admin
         public async Task<string> RegisterAdminAsync(AdminRegistrationRequestDto model)
         {
-            await _unitOfWork.BeginTransactionAsync();
-            if (string.IsNullOrEmpty(model.PersonalNumber))
-                throw new BadRequestException("Personal number is required");
-
-            if (model.PersonalNumber.Length != 11)
-                throw new BadRequestException("Personal number must be 11 characters long");
-
-            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
-                throw new BadRequestException("Personal number must contain only digits");
-
-            if (string.IsNullOrEmpty(model.Email))
-                throw new BadRequestException("Email is required");
-
-            if (!EmailRegex.IsMatch(model.Email))
-                throw new BadRequestException("Invalid email format");
-
-            if (string.IsNullOrEmpty(model.PhoneNumber))
-                throw new BadRequestException("Phone number is required");
-
-            if (!PhoneRegex.IsMatch(model.PhoneNumber))
-                throw new BadRequestException("Phone number must be +995XXXXXXXXX format");
-
-            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))  
-                throw new BadRequestException("A user with this personal number already exists");
-            
-            if(await _userManager.Users.AnyAsync(u => u.Email == model.Email))
-                throw new BadRequestException("A user with this email already exists");
-            
-            if(await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
-                throw new BadRequestException("A user with this phone number already exists");
-
+           
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+                if (string.IsNullOrEmpty(model.PersonalNumber))
+                    throw new BadRequestException("Personal number is required");
+
+                if (model.PersonalNumber.Length != 11)
+                    throw new BadRequestException("Personal number must be 11 characters long");
+
+                if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                    throw new BadRequestException("Personal number must contain only digits");
+
+                if (string.IsNullOrEmpty(model.Email))
+                    throw new BadRequestException("Email is required");
+
+                if (!EmailRegex.IsMatch(model.Email))
+                    throw new BadRequestException("Invalid email format");
+
+                if (string.IsNullOrEmpty(model.PhoneNumber))
+                    throw new BadRequestException("Phone number is required");
+
+                if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                    throw new BadRequestException("Phone number must be +995XXXXXXXXX format");
+
+                if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
+                    throw new BadRequestException("A user with this personal number already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                    throw new BadRequestException("A user with this email already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                    throw new BadRequestException("A user with this phone number already exists");
+
                 var user = _mapper.Map<ApplicationUser>(model);
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -153,41 +154,40 @@ namespace HMS.Application.Service
         #region Register Manager
         public async Task<string> RegisterManagerAsync(ManagerRegistrationRequestDto model)
         {
-            await _unitOfWork.BeginTransactionAsync();
-            if (string.IsNullOrEmpty(model.PersonalNumber))
-                throw new BadRequestException("Personal number is required");
-
-            if (model.PersonalNumber.Length != 11)
-                throw new BadRequestException("Personal number must be 11 characters long");
-
-            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
-                throw new BadRequestException("Personal number must contain only digits");
-
-            if (string.IsNullOrEmpty(model.Email))
-                throw new BadRequestException("Email is required");
-
-            if (!EmailRegex.IsMatch(model.Email))
-                throw new BadRequestException("Invalid email format");
-
-            if (string.IsNullOrEmpty(model.PhoneNumber))
-                throw new BadRequestException("Phone number is required");
-
-            if (!PhoneRegex.IsMatch(model.PhoneNumber))
-                throw new BadRequestException("Phone number must be 9 characters long");
-
-            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
-                throw new BadRequestException("A user with this personal number already exists");
-
-            if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
-                throw new BadRequestException("A user with this email already exists");
-
-            if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
-                throw new BadRequestException("A user with this phone number already exists");
-
-
-
+           
             try
             {
+
+                await _unitOfWork.BeginTransactionAsync();
+                if (string.IsNullOrEmpty(model.PersonalNumber))
+                    throw new BadRequestException("Personal number is required");
+
+                if (model.PersonalNumber.Length != 11)
+                    throw new BadRequestException("Personal number must be 11 characters long");
+
+                if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                    throw new BadRequestException("Personal number must contain only digits");
+
+                if (string.IsNullOrEmpty(model.Email))
+                    throw new BadRequestException("Email is required");
+
+                if (!EmailRegex.IsMatch(model.Email))
+                    throw new BadRequestException("Invalid email format");
+
+                if (string.IsNullOrEmpty(model.PhoneNumber))
+                    throw new BadRequestException("Phone number is required");
+
+                if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                    throw new BadRequestException("Phone number must be 9 characters long");
+
+                if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
+                    throw new BadRequestException("A user with this personal number already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                    throw new BadRequestException("A user with this email already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                    throw new BadRequestException("A user with this phone number already exists");
                 var user = _mapper.Map<ApplicationUser>(model);
 
 
@@ -233,41 +233,43 @@ namespace HMS.Application.Service
         #region Register Guest
         public async Task<string> RegisterGuestAsync(GuestRegistrationRequestDto model)
         {
-            await _unitOfWork.BeginTransactionAsync();
-            if (string.IsNullOrEmpty(model.PersonalNumber))
-                throw new BadRequestException("Personal number is required");
-
-            if (model.PersonalNumber.Length != 11)
-                throw new BadRequestException("Personal number must be 11 characters long");
-
-            if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
-                throw new BadRequestException("Personal number must contain only digits");
-
-            if (string.IsNullOrEmpty(model.Email))
-                throw new BadRequestException("Email is required");
-
-            if (!EmailRegex.IsMatch(model.Email))
-                throw new BadRequestException("Invalid email format");
-
-            if (string.IsNullOrEmpty(model.PhoneNumber))
-                throw new BadRequestException("Phone number is required");
-
-
-            if (!PhoneRegex.IsMatch(model.PhoneNumber))
-                throw new BadRequestException("Phone number must be 9 characters long");
-
-            if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
-                throw new BadRequestException("A user with this personal number already exists");
-
-            if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
-                throw new BadRequestException("A user with this email already exists");
-
-            if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
-                throw new BadRequestException("A user with this phone number already exists");
-
 
             try
             {
+
+                await _unitOfWork.BeginTransactionAsync();
+                if (string.IsNullOrEmpty(model.PersonalNumber))
+                    throw new BadRequestException("Personal number is required");
+
+                if (model.PersonalNumber.Length != 11)
+                    throw new BadRequestException("Personal number must be 11 characters long");
+
+                if (!PersonalNumberRegex.IsMatch(model.PersonalNumber))
+                    throw new BadRequestException("Personal number must contain only digits");
+
+                if (string.IsNullOrEmpty(model.Email))
+                    throw new BadRequestException("Email is required");
+
+                if (!EmailRegex.IsMatch(model.Email))
+                    throw new BadRequestException("Invalid email format");
+
+                if (string.IsNullOrEmpty(model.PhoneNumber))
+                    throw new BadRequestException("Phone number is required");
+
+
+                if (!PhoneRegex.IsMatch(model.PhoneNumber))
+                    throw new BadRequestException("Phone number must be 9 characters long");
+
+                if (await _userManager.Users.AnyAsync(u => u.PersonalNumber == model.PersonalNumber))
+                    throw new BadRequestException("A user with this personal number already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.Email == model.Email))
+                    throw new BadRequestException("A user with this email already exists");
+
+                if (await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+                    throw new BadRequestException("A user with this phone number already exists");
+
+
                 var user = _mapper.Map<ApplicationUser>(model);
 
                 var result = await _userManager.CreateAsync(user, model.Password);

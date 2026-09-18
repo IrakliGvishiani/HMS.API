@@ -32,7 +32,7 @@ services:
       - EmailSettings__Username=${SMTP_USERNAME}
       - EmailSettings__Password=${SMTP_PASSWORD}
 
-      - AppSettings__BaseUrl=http://localhost
+      - AppSettings__BaseUrl=http://209.38.225.104
 
     healthcheck:
       test:
