@@ -25,10 +25,10 @@ services:
       - Redis__ConnectionString=redis:6379
 
       - JWT__Secret=${JWT_SECRET}
-      - EmailSettings__SmtpServer=smtp.gmail.com
-      - EmailSettings__Port=465
-      - EmailSettings__UseSsl=true
-      - EmailSettings__Sender=${SMTP_USERNAME}
+      - EmailSettings__SmtpServer=smtp-relay.brevo.com
+      - EmailSettings__Port=2525
+      - EmailSettings__UseSsl=false
+      - EmailSettings__Sender=irakligvidhiani@gmail.com
       - EmailSettings__Username=${SMTP_USERNAME}
       - EmailSettings__Password=${SMTP_PASSWORD}
 
