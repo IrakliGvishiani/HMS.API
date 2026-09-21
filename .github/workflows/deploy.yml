@@ -19,7 +19,8 @@ jobs:
           script: |
             cd /var/www/hms/HMS.API
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
 
             docker compose -f docker-compose.yml up -d --build
 

@@ -24,10 +24,10 @@ namespace HMS.API.Controllers
         }
 
         [Authorize(Roles = "Manager,Admin")]
-        
+        [Consumes("multipart/form-data")]
         [HttpPost]
-        [SwaggerRequestExample(typeof(RoomForCreatingDto), typeof(RoomForCreatingDtoExample))]
-        public async Task<IActionResult> CreateRoom([FromBody] RoomForCreatingDto model)
+        //[SwaggerRequestExample(typeof(RoomForCreatingDto), typeof(RoomForCreatingDtoExample))]
+        public async Task<IActionResult> CreateRoom([FromForm] RoomForCreatingDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _roomService.CreateRoomAsync(model, userId);
@@ -66,6 +66,13 @@ namespace HMS.API.Controllers
         public async Task<IActionResult> GetRoomsByHotelId(int hotelId)
         {
             var result = await _roomService.GetRoomsByHotelIdAsync(hotelId);
+            return this.ToActionResult(_commonResponse.Success(result));
+        }
+
+        [HttpGet("details/{id}")]
+        public async Task<IActionResult> GetRoomDetails(int id)
+        {
+            var result = await _roomService.GetRoomDetailsByIdAsync(id);
             return this.ToActionResult(_commonResponse.Success(result));
         }
     }

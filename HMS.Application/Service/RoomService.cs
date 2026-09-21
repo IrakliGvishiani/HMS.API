@@ -4,8 +4,10 @@ using HMS.Application.Exceptions;
 using HMS.Application.Models.RoomDtos;
 using HMS.Domain.Entities;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace HMS.Application.Service
@@ -16,25 +18,37 @@ namespace HMS.Application.Service
         private readonly IHotelService _hotelService;
         private readonly IReservationRoomRepository _reservationRoomRepository;
         private readonly IManagerRepository _managerRepository;
+        private readonly ICloudinaryImageService _cloudinaryImageService;
+        private readonly IAdminRepository _adminRepository;
         private readonly IMapper _mapper;
-        public RoomService(IRoomRepository roomRepository, IHotelService hotelService, IReservationRoomRepository reservationRoomRepository, IManagerRepository managerRepository, IMapper mapper)
+        private const int maxImages = 25;
+        public RoomService(IRoomRepository roomRepository,
+            IHotelService hotelService,
+            IReservationRoomRepository reservationRoomRepository,
+            IManagerRepository managerRepository,
+            ICloudinaryImageService cloudinaryImageService,
+            IAdminRepository adminRepository,
+            IMapper mapper)
         {
             _roomRepository = roomRepository;
             _hotelService = hotelService;
             _reservationRoomRepository = reservationRoomRepository;
             _managerRepository = managerRepository;
+            _cloudinaryImageService = cloudinaryImageService;
+            _adminRepository = adminRepository;
             _mapper = mapper;
         }
-        public async Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId)
+        public async Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId, CancellationToken ct = default)
         {
             if(model == null) throw new BadRequestException("Request Model Required!");
 
             var manager = await _managerRepository.GetAsync(m => m.ApplicationUserId == userId);
+            var admin = await _adminRepository.GetAsync(a => a.ApplicationUserId == userId);
 
-            if (manager == null)
-                throw new NotFoundException("Manager not found.");
+            if (manager == null && admin == null)
+                throw new NotFoundException("User not found.");
 
-            if (manager.HotelId != model.HotelId)
+            if (manager != null && manager.HotelId != model.HotelId)
                 throw new NotAllowedException(
                     "You cannot create a room for another hotel.");
 
@@ -48,9 +62,33 @@ namespace HMS.Application.Service
 
             if (hotel == null) throw new NotFoundException("Hotel not found!");
 
-
+            if(model.Images != null && model.Images.Count > maxImages)
+                throw new BadRequestException($"You can upload up to {maxImages} images.");
 
             var mappedRoom = _mapper.Map<Room>(model);
+
+            if (model.Images != null && model.Images.Any(f => f != null && f.Length > 0))
+            {
+                var roomImages = new List<RoomImage>();
+                var validFiles = model.Images.Where(f => f != null && f.Length > 0).ToList();
+
+                for (int i = 0; i < validFiles.Count; i++)
+                {
+                    var uploadResult = await _cloudinaryImageService.UploadAsync(
+                        validFiles[i], width: 1200, height: 800, folder: "rooms", ct
+                        );
+
+                    roomImages.Add(new RoomImage
+                    {
+                        ImageUrl = uploadResult.Url,
+                        ImagePublicId = uploadResult.publicId,
+                        IsPrimary = i == 0
+                    });
+                }
+
+                mappedRoom.RoomImages = roomImages;
+            }
+
 
             await _roomRepository.AddAsync(mappedRoom);
             await _roomRepository.SaveAsync();
@@ -89,7 +127,12 @@ namespace HMS.Application.Service
 
         public async Task<IEnumerable<RoomForGettingDto>> GetRoomsByHotelIdAsync(int hotelId)
         {
-            var rooms = await _roomRepository.GetAllAsync(filter: r => r.HotelId == hotelId, tracking: false);
+            var rooms = await _roomRepository.GetAllAsync(filter: r => r.HotelId == hotelId,
+                includes: new Expression<Func<Room, Object>>[] {
+                r => r.RoomImages
+                },
+
+                tracking: false);
             var mappedrooms = _mapper.Map<IEnumerable<RoomForGettingDto>>(rooms.Items);
             return mappedrooms;
         }
@@ -104,6 +147,10 @@ namespace HMS.Application.Service
          !room.ReservationRooms.Any(rr =>
              rr.Reservation.CheckInDate < model.CheckOutDate &&
              rr.Reservation.CheckOutDate > model.CheckInDate),
+     includes: new Expression<Func<Room, object>>[]
+     {
+         room => room.RoomImages
+     },
      tracking: false
  );
 
@@ -143,6 +190,16 @@ namespace HMS.Application.Service
             return _mapper.Map<RoomForUpdatingDto>(mappedRoom);
         }
 
-  
+        public async Task<RoomDetailsDto> GetRoomDetailsByIdAsync(int roomId)
+        {
+            if(roomId <= 0) throw new BadRequestException("Invalid Room ID!");
+
+            var room = await _roomRepository.GetAsync(x => x.Id == roomId,
+                include: r => r.Include(room => room.RoomImages));
+
+            if (room == null) throw new NotFoundException("Room not found!");
+
+            return _mapper.Map<RoomDetailsDto>(room);
+        }
     }
 }

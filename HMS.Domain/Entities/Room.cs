@@ -17,5 +17,7 @@ namespace HMS.Domain.Entities
         public Hotel Hotel { get; set; }
 
         public ICollection<ReservationRoom> ReservationRooms { get; set; } = new List<ReservationRoom>();
+
+        public ICollection<RoomImage> RoomImages { get; set; } = new List<RoomImage>();
     }
 }

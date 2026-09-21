@@ -37,9 +37,10 @@ namespace HMS.API.Controllers
         }
 
         [HttpPost]
-        [SwaggerRequestExample(typeof(HotelForCreatingDto), typeof(HotelForCreatingDtoExample))]
+        [Consumes("multipart/form-data")]
+        //[SwaggerRequestExample(typeof(HotelForCreatingDto), typeof(HotelForCreatingDtoExample))]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateNewHotel([FromBody] HotelForCreatingDto model)
+        public async Task<IActionResult> CreateNewHotel([FromForm] HotelForCreatingDto model)
         {
             var result = await _hotelService.CreateNewHotelAsync(model);
             return this.ToActionResult(_commonResponse.Success(result));

@@ -17,13 +17,16 @@ namespace HMS.Application.Service
     {
         private readonly IHotelRepository _hotelRepository;
         private readonly IMapper _mapper;
-        public HotelService(IHotelRepository hotelRepository, IMapper mapper)
+        private readonly ICloudinaryImageService _cloudinaryImageService;
+        private const int maxImages = 15;
+        public HotelService(IHotelRepository hotelRepository, IMapper mapper,ICloudinaryImageService cloudinaryImageService)
         {
             _hotelRepository = hotelRepository;
             _mapper = mapper;
+            _cloudinaryImageService = cloudinaryImageService;
         }
 
-        public async Task<int> CreateNewHotelAsync(HotelForCreatingDto model)
+        public async Task<int> CreateNewHotelAsync(HotelForCreatingDto model, CancellationToken ct = default)
         {
             if (model == null) throw new BadRequestException("Request Model Required!");
 
@@ -41,7 +44,34 @@ namespace HMS.Application.Service
 
             if(model.Rating < 1 || model.Rating > 5) throw new BadRequestException("Hotel Rating is Between 1-5!");
 
-           var mappedHotel = _mapper.Map<Hotel>(model);
+            if(model.Images != null && model.Images.Count > maxImages)
+                throw new BadRequestException($"You can upload up to {maxImages} images.");
+
+            var mappedHotel = _mapper.Map<Hotel>(model);
+
+            if (model.Images != null && model.Images.Any(f => f != null && f.Length > 0))
+            {
+                var hotelImages = new List<HotelImage>();
+                var validFiles = model.Images.Where(f => f != null && f.Length > 0).ToList();
+
+                for(int i = 0;i < validFiles.Count; i++)
+                {
+                    var uploadResult = await _cloudinaryImageService.UploadAsync(
+                        validFiles[i],width: 1200, height: 800,folder: "hotels",ct
+                        );
+
+                    hotelImages.Add(new HotelImage
+                    {
+                        ImageUrl = uploadResult.Url,
+                        ImagePublicId = uploadResult.publicId,
+                        IsPrimary = i == 0 
+                    });
+                }
+
+                mappedHotel.HotelImages = hotelImages;
+            }
+
+            
 
             await _hotelRepository.AddAsync(mappedHotel);
             await _hotelRepository.SaveAsync();
@@ -65,14 +95,15 @@ namespace HMS.Application.Service
             return hotel.Id;
         }
 
-        public async Task<HotelForGettingDto> GetHotelAsync(int id)
+        public async Task<HotelDetailsDto> GetHotelAsync(int id)
         {
            if(id <= 0) throw new BadRequestException("Invalid Hotel Id!");
 
-           var hotel = await _hotelRepository.GetAsync(f => f.Id == id);
+           var hotel = await _hotelRepository.GetAsync(f => f.Id == id,
+               include: query => query.Include(h => h.HotelImages));
            if(hotel == null) throw new NotFoundException("Hotel not found!");
 
-           return _mapper.Map<HotelForGettingDto>(hotel);
+           return _mapper.Map<HotelDetailsDto>(hotel);
         }
 
         public async Task<PagedResponseDto<HotelForGettingDto>> GetHotelListAsync(PagedRequestDto parameters)
@@ -91,7 +122,8 @@ namespace HMS.Application.Service
                 orderBy: orderBy,
                 ascending: parameters.Ascending,
                 pageNumber: parameters.PageNumber,
-                pageSize: parameters.PageSize
+                pageSize: parameters.PageSize,
+                includes: h => h.HotelImages.Where(i => i.IsPrimary)
             );
 
             if(hotels.Items.Count() == 0)

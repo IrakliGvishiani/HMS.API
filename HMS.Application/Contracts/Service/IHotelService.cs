@@ -10,11 +10,11 @@ namespace HMS.Application.Contracts.Service
     public interface IHotelService
     {
 
-        Task<int> CreateNewHotelAsync(HotelForCreatingDto model);
+        Task<int> CreateNewHotelAsync(HotelForCreatingDto model, CancellationToken ct = default);
 
         Task<int> UpdateHotelAsync(HotelForUpdatingDto model);
 
-        Task<HotelForGettingDto> GetHotelAsync(int id);
+        Task<HotelDetailsDto> GetHotelAsync(int id);
 
         Task<PagedResponseDto<HotelForGettingDto>> GetHotelListAsync(PagedRequestDto parameters);
 

@@ -19,6 +19,9 @@ namespace HMS.API.Middleware
 
         private async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
+            Console.WriteLine("========== EXCEPTION ==========");
+            Console.WriteLine(ex.ToString());
+            Console.WriteLine("================================");
 
             var statusCode = ex switch
             {

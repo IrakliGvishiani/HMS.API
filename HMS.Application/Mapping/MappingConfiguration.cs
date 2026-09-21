@@ -23,15 +23,23 @@ namespace HMS.Application.Mapping
 
             config.NewConfig<HotelForCreatingDto, Hotel>();
             config.NewConfig<HotelForUpdatingDto, Hotel>();
-            config.NewConfig<Hotel, HotelForGettingDto>();
+            config.NewConfig<Hotel, HotelForGettingDto>()
+            .Map(dest => dest.PrimaryImageUrl, src => src.HotelImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault());
+            
 
+            config.NewConfig<Hotel, HotelDetailsDto>()
+            .Map(dest => dest.PrimaryImageUrl, src => src.HotelImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault())
+            .Map(dest => dest.ImageUrls, src => src.HotelImages.Select(i => i.ImageUrl));
 
             // ROOM MAPPING
             config.NewConfig<RoomForCreatingDto, Room>();
             config.NewConfig<RoomForUpdatingDto, Room>();
-            config.NewConfig<Room, RoomForGettingDto>();
+            config.NewConfig<Room, RoomForGettingDto>()
+                .Map(dest => dest.PrimaryImageUrl, src => src.RoomImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault());
 
-
+            config.NewConfig<Room, RoomDetailsDto>()
+                .Map(dest => dest.PrimaryImageUrl, src => src.RoomImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault())
+                .Map(dest => dest.ImageUrls, src => src.RoomImages.Select(i => i.ImageUrl));
 
             // MANAGER MAPPING
             config.NewConfig<ManagerRegistrationRequestDto, Manager>();

@@ -11,6 +11,7 @@ namespace HMS.Application.Models.RoomDtos
 
         public double Price { get; set; }
 
+        public string PrimaryImageUrl { get; set; }
         public int HotelId { get; set; }
     }
 }

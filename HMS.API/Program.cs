@@ -1,9 +1,11 @@
+using CloudinaryDotNet;
 using FluentValidation;
 using HMS.API.Jobs;
 using HMS.API.Middleware;
 using HMS.Application.Contracts.Persistance;
 using HMS.Application.Contracts.Service;
 using HMS.Application.Mapping;
+using HMS.Application.Models.Cloudinary;
 using HMS.Application.Service;
 
 using HMS.Domain.Entities;
@@ -93,9 +95,9 @@ namespace HMS.API
             builder.Services.AddSwaggerExamplesFromAssemblyOf<Program>();
 
 
- 
 
-         
+
+
 
 
             // SERVICES
@@ -112,6 +114,7 @@ namespace HMS.API
             builder.Services.AddScoped<IGuestService, GuestService>();
             builder.Services.AddScoped<CommonResponse>();
             builder.Services.AddScoped<IReservationService, ReservationService>();
+            builder.Services.AddScoped<ICloudinaryImageService, CloudinaryImageService>();
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -177,6 +180,19 @@ namespace HMS.API
                     ClockSkew = TimeSpan.Zero
                 };
             });
+
+
+            // CLOUDINARY
+            builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+            var cloudinarySettings = builder.Configuration.GetSection("Cloudinary").Get<CloudinarySettings>();
+            var account = new Account(cloudinarySettings.CloudName, cloudinarySettings.ApiKey, cloudinarySettings.ApiSecret);
+
+            var cloudinary = new Cloudinary(account)
+            {
+                Api = { Secure = true }
+            };
+
+            builder.Services.AddSingleton(cloudinary);
 
             var app = builder.Build();
             app.MapGet("/health", () => Results.Ok("Healthy"));

@@ -1,19 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace HMS.Application.Models.RoomDtos
 {
-    public class RoomForCreatingDto
+    public class RoomDetailsDto
     {
+        public int Id { get; set; }
         public string Name { get; set; }
 
         public double Price { get; set; }
 
-        public List<IFormFile> Images { get; set; } = new();
+        public string PrimaryImageUrl { get; set; }
 
+        public List<string> ImageUrls { get; set; } = new();
         public int HotelId { get; set; }
-
     }
 }

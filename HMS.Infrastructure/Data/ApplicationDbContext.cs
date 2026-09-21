@@ -39,5 +39,9 @@ namespace HMS.Infrastructure.Data
         public DbSet<Room> Rooms { get; set; }
 
         public DbSet<Admin> Admins { get; set; }
+
+        public DbSet<HotelImage> HotelImages { get; set; }
+
+        public DbSet<RoomImage> RoomImages { get; set; }
     }
 }

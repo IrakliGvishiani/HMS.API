@@ -7,7 +7,7 @@ namespace HMS.Application.Contracts.Service
 {
     public interface IRoomService
     {
-        Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId);
+        Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId,CancellationToken ct = default);
 
         Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model, string userId);
 
@@ -16,5 +16,7 @@ namespace HMS.Application.Contracts.Service
         Task<int> DeleteRoomAsync(int id, string userId);
 
         Task<IEnumerable<RoomForGettingDto>> GetRoomsByHotelIdAsync(int hotelId);
+
+        Task<RoomDetailsDto> GetRoomDetailsByIdAsync(int roomId);
     }
 }

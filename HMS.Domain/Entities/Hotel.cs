@@ -21,5 +21,7 @@ namespace HMS.Domain.Entities
         public IEnumerable<Manager> Managers { get; set; }
 
         public IEnumerable<Room> Rooms { get; set; }
+
+        public IEnumerable<HotelImage> HotelImages { get; set; } = new List<HotelImage>();
     }
 }
