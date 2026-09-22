@@ -127,9 +127,21 @@ namespace HMS.API
 
             //OTHER
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            
 
 
+            // CORS
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:4200" };
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AngularApp", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
 
 
 
@@ -201,6 +213,7 @@ namespace HMS.API
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseHttpsRedirection();
+            app.UseCors("AngularDev");
             app.UseAuthentication();    
             app.UseAuthorization();
             app.MapControllers();
