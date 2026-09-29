@@ -12,7 +12,7 @@ namespace HMS.Application.Contracts.Service
 
         Task<int> CreateNewHotelAsync(HotelForCreatingDto model, CancellationToken ct = default);
 
-        Task<int> UpdateHotelAsync(HotelForUpdatingDto model);
+        Task<int> UpdateHotelAsync(HotelForUpdatingDto model,string userId,string userRole, CancellationToken ct = default);
 
         Task<HotelDetailsDto> GetHotelAsync(int id);
 

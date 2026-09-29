@@ -21,14 +21,14 @@ namespace HMS.Infrastructure.Persistance
         }
 
         public async Task<(IEnumerable<T> Items, int TotalCount)> GetAllAsync(
-            Expression<Func<T, bool>> filter = null,
-            int? pageNumber = null,
-            int? pageSize = null,
-            Expression<Func<T, object>> orderBy = null,
-            bool ascending = true,
-            CancellationToken cancellationToken = default,
-            bool tracking = true,
-            params Expression<Func<T, object>>[] includes)
+    Expression<Func<T, bool>> filter = null,
+    int? pageNumber = null,
+    int? pageSize = null,
+    Expression<Func<T, object>> orderBy = null,
+    bool ascending = true,
+    CancellationToken cancellationToken = default,
+    bool tracking = true,
+    params Func<IQueryable<T>, IQueryable<T>>[] includes)
         {
             IQueryable<T> query = _dbSet;
 
@@ -41,7 +41,7 @@ namespace HMS.Infrastructure.Persistance
             if (includes != null)
             {
                 foreach (var include in includes)
-                    query = query.Include(include);
+                    query = include(query);
             }
 
             int totalCount = await query.CountAsync(cancellationToken);
@@ -58,7 +58,9 @@ namespace HMS.Infrastructure.Persistance
                 int page = Math.Max(pageNumber.Value, 1);
                 int size = Math.Max(pageSize.Value, 1);
 
-                query = query.Skip((page - 1) * size).Take(size);
+                query = query
+                    .Skip((page - 1) * size)
+                    .Take(size);
             }
 
             var items = await query.ToListAsync(cancellationToken);

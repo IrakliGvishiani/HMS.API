@@ -25,11 +25,25 @@ namespace HMS.Application.Mapping
             config.NewConfig<HotelForUpdatingDto, Hotel>();
             config.NewConfig<Hotel, HotelForGettingDto>()
             .Map(dest => dest.PrimaryImageUrl, src => src.HotelImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault());
-            
+
 
             config.NewConfig<Hotel, HotelDetailsDto>()
-            .Map(dest => dest.PrimaryImageUrl, src => src.HotelImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault())
-            .Map(dest => dest.ImageUrls, src => src.HotelImages.Select(i => i.ImageUrl));
+    .Map(dest => dest.PrimaryImageUrl,
+        src => src.HotelImages
+            .Where(i => i.IsPrimary)
+            .Select(i => i.ImageUrl)
+            .FirstOrDefault())
+    .Map(dest => dest.Images,
+        src => src.HotelImages.Select(image => new HotelImageDto
+        {
+            Id = image.Id,
+            Url = image.ImageUrl,
+            IsPrimary = image.IsPrimary
+        }).ToList());
+
+
+            config.NewConfig<HotelImage, HotelImageDto>()
+            .Map(dest => dest.Url, src => src.ImageUrl);
 
             // ROOM MAPPING
             config.NewConfig<RoomForCreatingDto, Room>();
@@ -37,14 +51,43 @@ namespace HMS.Application.Mapping
             config.NewConfig<Room, RoomForGettingDto>()
                 .Map(dest => dest.PrimaryImageUrl, src => src.RoomImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault());
 
+            config.NewConfig<RoomImage, RoomImageDto>()
+    .Map(dest => dest.Url, src => src.ImageUrl);
+
             config.NewConfig<Room, RoomDetailsDto>()
-                .Map(dest => dest.PrimaryImageUrl, src => src.RoomImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault())
-                .Map(dest => dest.ImageUrls, src => src.RoomImages.Select(i => i.ImageUrl));
+    .Map(dest => dest.PrimaryImageUrl,
+        src => src.RoomImages != null
+            ? src.RoomImages.Where(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault()
+            : null)
+    .Map(dest => dest.Images,
+        src => src.RoomImages != null
+            ? src.RoomImages.Select(image => new RoomImageDto
+            {
+                Id = image.Id,
+                Url = image.ImageUrl,
+                IsPrimary = image.IsPrimary
+            }).ToList()
+            : new List<RoomImageDto>());
 
             // MANAGER MAPPING
             config.NewConfig<ManagerRegistrationRequestDto, Manager>();
-            config.NewConfig<Manager, ManagerListForGettingDto>();
+            //config.NewConfig<Manager, ManagerListForGettingDto>();
 
+            config.NewConfig<Manager, ManagerListForGettingDto>()
+    .Map(dest => dest.Id, src => src.Id)
+    .Map(dest => dest.FirstName, src => src.FirstName)
+    .Map(dest => dest.LastName, src => src.LastName)
+    .Map(dest => dest.PersonalNumber, src => src.ApplicationUser.PersonalNumber)
+    .Map(dest => dest.Email, src => src.ApplicationUser.Email)
+    .Map(dest => dest.PhoneNumber, src => src.ApplicationUser.PhoneNumber)
+    .Map(dest => dest.HotelId, src => src.HotelId)             
+    .Map(dest => dest.HotelName, src => src.Hotel.Name);
+
+            config.NewConfig<Manager, ManagerProfileDto>()
+    .Map(dest => dest.Email, src => src.ApplicationUser.Email)
+    .Map(dest => dest.PersonalNumber, src => src.ApplicationUser.PersonalNumber)
+    .Map(dest => dest.PhoneNumber, src => src.ApplicationUser.PhoneNumber)
+    .Map(dest => dest.HotelName, src => src.Hotel.Name);
 
             // ROLES MAPPING
             config.NewConfig<ManagerRegistrationRequestDto, ApplicationUser>()
@@ -73,14 +116,43 @@ namespace HMS.Application.Mapping
 
             // GUEST MAPPING
             config.NewConfig<GuestRegistrationRequestDto, Guest>();
-            config.NewConfig<Guest, GuestForGettingDto>();
+            config.NewConfig<Guest, GuestForGettingDto>()
+    .Map(dest => dest.Email, src => src.ApplicationUser.Email)
+    .Map(dest => dest.PersonalNumber, src => src.ApplicationUser.PersonalNumber)
+    .Map(dest => dest.PhoneNumber, src => src.ApplicationUser.PhoneNumber);
             config.NewConfig<GuestForUpdatingDto, Guest>();
             config.NewConfig<GuestForGettingDto, GuestForUpdatingDto>();
 
 
             //RESERVATION MAPPING
-            config.NewConfig<ReservationForGettingDto,Reservation>();
-
+            //config.NewConfig<ReservationForGettingDto,Reservation>();
+            config.NewConfig<Reservation, ReservationForGettingDto>()
+    .Map(
+        dest => dest.GuestName,
+        src => src.Guest.ApplicationUser.UserName
+    )
+    .Map(
+        dest => dest.GuestPhoneNumber,
+        src => src.Guest.ApplicationUser.PhoneNumber
+    )
+    .Map(
+        dest => dest.RoomIds,
+        src => src.ReservationRooms
+            .Select(rr => rr.RoomId)
+            .ToList()
+    )
+    .Map(
+        dest => dest.HotelId,
+        src => src.ReservationRooms
+            .Select(rr => rr.Room.HotelId)
+            .FirstOrDefault()
+    )
+    .Map(
+        dest => dest.HotelName,
+        src => src.ReservationRooms
+            .Select(rr => rr.Room.Hotel.Name)
+            .FirstOrDefault()
+    );
 
             //ADMIN
             config.NewConfig<Admin, AdminForGettingDto>()

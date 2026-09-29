@@ -17,13 +17,17 @@ namespace HMS.API.Controllers
             _commonResponse = commonResponse;
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("account")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteAdmin([FromRoute] int id)
+        public async Task<IActionResult> DeleteAccount()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var admin = await _adminService.DeleteAdminAsync(id, userId);
-            return this.ToActionResult(_commonResponse.NoContent());
+
+            var result = await _adminService.DeleteAdminAsync(userId);
+
+            return this.ToActionResult(
+                _commonResponse.Success(result)
+            );
         }
 
         [HttpGet]

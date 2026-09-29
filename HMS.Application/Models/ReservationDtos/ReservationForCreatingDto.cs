@@ -10,5 +10,7 @@ namespace HMS.Application.Models.ReservationDtos
         public DateTime CheckOutDate { get; set; }
 
         public List<int> RoomIds { get; set; }
+
+        public int? GuestId { get; set; }
     }
 }

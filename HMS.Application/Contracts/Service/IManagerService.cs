@@ -19,6 +19,9 @@ namespace HMS.Application.Contracts.Service
 
         Task<int> UpdateManagerAsync(ManagerForUpdatingDto model);
 
-        Task<HotelAnalyticsDto> GetManagerAnalyticsAsync(string id);
+        Task<HotelAnalyticsDto> GetManagerAnalyticsAsync(string userId,string userRole);
+
+        Task<ManagerProfileDto> GetOwnProfileAsync(string userId);
+
     }
 }

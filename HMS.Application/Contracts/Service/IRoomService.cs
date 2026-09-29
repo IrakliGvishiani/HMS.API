@@ -9,7 +9,7 @@ namespace HMS.Application.Contracts.Service
     {
         Task<int> CreateRoomAsync(RoomForCreatingDto model, string userId,CancellationToken ct = default);
 
-        Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model, string userId);
+        Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model, string userId,CancellationToken ct =default);
 
         Task<IEnumerable<RoomForGettingDto>> SearchRoomsAsync(SearchRoomDto model);
 

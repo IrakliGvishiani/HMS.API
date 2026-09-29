@@ -35,6 +35,14 @@ namespace HMS.API.Controllers
                 
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetAllGuests()
+        {
+            var guests = await _guestService.GetAllGuestsAsync();
+            return this.ToActionResult(_commonResponse.Success(guests));
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin,Manager,Guest")]
         public async Task<IActionResult> DeleteGuest([FromRoute] int id)
@@ -43,46 +51,5 @@ namespace HMS.API.Controllers
             return this.ToActionResult(_commonResponse.Success(guest));
         }
 
-        [HttpPost("create-reservation")]
-        [Authorize(Roles = "Guest")]
-        public async Task<IActionResult> CreateReservation([FromBody]
-    ReservationForCreatingDto model)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var result = await _reservationService
-                .CreateReservationAsync(model, userId);
-
-            return this.ToActionResult(_commonResponse.Created(result));
-        }
-
-        [HttpPut("reservation")]
-        [Authorize(Roles = "Guest")]
-
-        public async Task<IActionResult> UpdateReservation([FromBody] ReservationForUpdatingDto model)
-        {
-            var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var reservation = await _reservationService .UpdateReservationAsync(model,user);
-            return this.ToActionResult(_commonResponse.Success(reservation));
-        }
-
-        [HttpDelete("reservation/{id}")]
-        [Authorize(Roles = "Guest")]
-
-        public async Task<IActionResult> DeleteReservation([FromRoute] int id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await _reservationService .DeleteReservationAsync(id, userId);
-            return this.ToActionResult(_commonResponse.Success(result));
-        }
-
-        [HttpGet("search-reservations")]
-        [Authorize(Roles = "Guest")]
-
-        public async Task<IActionResult> SearchReservations([FromQuery] ReservationSearchDto model)
-        {
-            var result = await _reservationService.SearchReservationsAsync(model);
-            return this.ToActionResult(_commonResponse.Success(result));
-        }
     }
 }

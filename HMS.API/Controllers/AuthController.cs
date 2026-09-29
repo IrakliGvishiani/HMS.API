@@ -23,7 +23,7 @@ namespace HMS.API.Controllers
             _authService = authService;
             _commonResponse = commonResponse;
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost("register-admin")]
         [SwaggerRequestExample(typeof(AdminRegistrationRequestDto), typeof(AdminRegistrationRequestDtoExample))]
         public async Task<IActionResult> CreateAdmin([FromBody] AdminRegistrationRequestDto request)

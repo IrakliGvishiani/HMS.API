@@ -38,21 +38,36 @@ namespace HMS.API.Controllers
         }
 
         [HttpGet]
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllManagers()
         {
             var result = await _managerService.GetManagersAsync();
             return this.ToActionResult(_commonResponse.Success(result));
         }
 
-        [HttpGet("hotel-analytics")]
+        [HttpGet("me")]
         [Authorize(Roles = "Manager")]
-
-        public async Task<IActionResult> GetHotelAnalytics()
+        public async Task<IActionResult> GetOwnProfile()
         {
-            var user = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await _managerService.GetManagerAnalyticsAsync(user);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _managerService.GetOwnProfileAsync(userId);
             return this.ToActionResult(_commonResponse.Success(result));
+        }
+
+        [HttpGet("analytics")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetAnalytics()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            var result = await _managerService.GetManagerAnalyticsAsync(
+                userId,
+                userRole);
+
+            var resp = _commonResponse.Success(result);
+
+            return StatusCode(resp.HttpStatusCode, resp);
         }
     }
 }

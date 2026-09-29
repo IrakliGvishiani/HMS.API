@@ -22,6 +22,6 @@ namespace HMS.Domain.Entities
 
         public IEnumerable<Room> Rooms { get; set; }
 
-        public IEnumerable<HotelImage> HotelImages { get; set; } = new List<HotelImage>();
+        public ICollection<HotelImage> HotelImages { get; set; } = new List<HotelImage>();
     }
 }

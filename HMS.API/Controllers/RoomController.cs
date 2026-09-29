@@ -36,11 +36,11 @@ namespace HMS.API.Controllers
 
         [HttpPut]
         [Authorize(Roles = "Manager,Admin")]
-        
-        public async Task<IActionResult> UpdateRoom([FromBody] RoomForUpdatingDto model)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateRoom([FromForm] RoomForUpdatingDto model, CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await _roomService.UpdateRoomAsync(model, userId);
+            var result = await _roomService.UpdateRoomAsync(model, userId, ct);
             return this.ToActionResult(_commonResponse.Success(result));
         }
 

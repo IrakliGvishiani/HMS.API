@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using System.Net;
+using System.Security.Claims;
 using static CommonResponse;
 using static HMS.API.Examples;
 using static HMS.API.Examples.HotelForCreatingDtoExample;
@@ -55,11 +56,13 @@ namespace HMS.API.Controllers
 
 
         [HttpPut]
-        [SwaggerRequestExample(typeof(HotelForUpdatingDto), typeof(HotelForUpdatingDtoExample))]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateHotel([FromBody] HotelForUpdatingDto model)
+        [Consumes("multipart/form-data")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> UpdateHotel([FromForm] HotelForUpdatingDto model,CancellationToken ct)
         {
-            var result = await _hotelService.UpdateHotelAsync(model);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var result = await _hotelService.UpdateHotelAsync(model,userId,userRole,ct);
             return this.ToActionResult(_commonResponse.Success(result));
         }
 

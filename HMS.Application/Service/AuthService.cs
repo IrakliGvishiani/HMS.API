@@ -463,21 +463,102 @@ namespace HMS.Application.Service
             if (user == null)
                 throw new NotFoundException("User not found.");
 
+            var normalizedEmail = email.Trim().ToLower();
+
+            var cooldownKey = $"password-reset-cooldown:{normalizedEmail}";
+
+            var cooldown = await _redisService.GetAsync(cooldownKey);
+
+            if (cooldown != null)
+            {
+                throw new BadRequestException(
+                    "Please wait 60 seconds before requesting another password reset email."
+                );
+            }
+
+            var hourlyKey = $"password-reset-hourly:{normalizedEmail}";
+
+            var hourlyCountString = await _redisService.GetAsync(hourlyKey);
+
+            var hourlyCount = 0;
+
+            if (hourlyCountString != null)
+                hourlyCount = int.Parse(hourlyCountString);
+
+            if (hourlyCount >= 5)
+            {
+                throw new BadRequestException(
+                    "You have reached the maximum number of password reset requests. Please try again later."
+                );
+            }
+
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
             var encodedToken = WebEncoders.Base64UrlEncode(
-                Encoding.UTF8.GetBytes(token));
+                Encoding.UTF8.GetBytes(token)
+            );
 
             var resetLink =
-                $"https://localhost:7042/api/auth/reset-password" +
-                $"?email={Uri.EscapeDataString(user.Email)}" +
-                $"&token={Uri.EscapeDataString(encodedToken)}";
+               $"http://127.0.0.1:8081/reset-password" +
+               $"?email={Uri.EscapeDataString(user.Email)}" +
+               $"&token={Uri.EscapeDataString(encodedToken)}";
+
+            var emailBody = $"""
+                <html>
+                <body style="font-family: Arial, sans-serif; color: #1f2937;">
+                    <h2>Reset Your Password</h2>
+
+                    <p>
+                        We received a request to reset your password.
+                    </p>
+
+                    <p>
+                        Click the button below to create a new password:
+                    </p>
+
+                    <p>
+                        <a href="{resetLink}"
+                           style="
+                               display: inline-block;
+                               padding: 12px 24px;
+                               background-color: #2563eb;
+                               color: #ffffff;
+                               text-decoration: none;
+                               border-radius: 6px;
+                               font-weight: 600;
+                           ">
+                            Reset Password
+                        </a>
+                    </p>
+
+                    <p>
+                        If you did not request a password reset, you can safely ignore this email.
+                    </p>
+
+                    <p style="color: #64748b; font-size: 13px;">
+                        This link is intended only for resetting your password.
+                    </p>
+                </body>
+                </html>
+                """;
 
             await _emailService.Send(
                 user.Email,
                 "Reset Password",
-                 $"Your Password Reset Token is: " +
-                 $"{encodedToken}");
+                emailBody
+            );
+
+            await _redisService.SetAsync(
+                cooldownKey,
+                "1",
+                TimeSpan.FromSeconds(60)
+            );
+
+            await _redisService.SetAsync(
+                hourlyKey,
+                (hourlyCount + 1).ToString(),
+                TimeSpan.FromHours(1)
+            );
         }
         #endregion
 
@@ -552,9 +633,11 @@ namespace HMS.Application.Service
                 $"email-confirm:{user.Id}",
                 code,
                 TimeSpan.FromMinutes(5));
-            var baseUrl = _configuration["AppSettings:BaseUrl"];
-            var resendCodeLink =
-                $"{baseUrl}/api/auth/resend-confirmation-code?email={user.Email}";
+
+            var baseUrl = _configuration["AppSettings:FrontendBaseUrl"];
+
+            var confirmationLink =
+             $"{baseUrl}/confirm-email?email={Uri.EscapeDataString(user.Email)}";
 
             await _emailService.Send(
                 user.Email,
@@ -562,18 +645,24 @@ namespace HMS.Application.Service
                 $"""
         <h3>Your confirmation code is: <strong>{code}</strong></h3>
 
-        <h4>Didn't receive a code?</h4>
+        <p>This code will expire in 5 minutes.</p>
 
-        <a href="{resendCodeLink}"
+        <p>Enter the code on the confirmation page:</p>
+
+        <a href="{confirmationLink}"
            style="
-               background-color:blue;
+               background-color:#2563eb;
                color:white;
                padding:10px 20px;
                text-decoration:none;
                border-radius:5px;
                display:inline-block;">
-            Resend Confirmation Code
+            Confirm Email
         </a>
+
+        <p style="margin-top:20px;">
+            Didn't receive a code? You can request a new one from the confirmation page.
+        </p>
         """);
         }
         #endregion

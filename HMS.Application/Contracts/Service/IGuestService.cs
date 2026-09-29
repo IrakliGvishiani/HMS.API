@@ -15,5 +15,7 @@ namespace HMS.Application.Contracts.Service
         Task<GuestForGettingDto> UpdateGuestAsync(GuestForUpdatingDto model);
 
         Task<int> DeleteGuestAsync(int id);
+
+        Task<IEnumerable<GuestForGettingDto>> GetAllGuestsAsync();
     }
 }

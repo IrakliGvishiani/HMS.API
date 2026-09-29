@@ -13,7 +13,7 @@ namespace HMS.Application.Models.RoomDtos
 
         public string PrimaryImageUrl { get; set; }
 
-        public List<string> ImageUrls { get; set; } = new();
+        public List<RoomImageDto> Images { get; set; } = new();
         public int HotelId { get; set; }
     }
 }

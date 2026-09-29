@@ -18,12 +18,16 @@ namespace HMS.Application.Service
         private readonly IHotelRepository _hotelRepository;
         private readonly IMapper _mapper;
         private readonly ICloudinaryImageService _cloudinaryImageService;
+        private readonly IManagerRepository _managerRepository;
         private const int maxImages = 15;
-        public HotelService(IHotelRepository hotelRepository, IMapper mapper,ICloudinaryImageService cloudinaryImageService)
+        public HotelService(IHotelRepository hotelRepository, IMapper mapper,
+            ICloudinaryImageService cloudinaryImageService,
+            IManagerRepository managerRepository)
         {
             _hotelRepository = hotelRepository;
             _mapper = mapper;
             _cloudinaryImageService = cloudinaryImageService;
+            _managerRepository = managerRepository;
         }
 
         public async Task<int> CreateNewHotelAsync(HotelForCreatingDto model, CancellationToken ct = default)
@@ -123,7 +127,7 @@ namespace HMS.Application.Service
                 ascending: parameters.Ascending,
                 pageNumber: parameters.PageNumber,
                 pageSize: parameters.PageSize,
-                includes: h => h.HotelImages.Where(i => i.IsPrimary)
+                includes: q => q.Include(h => h.HotelImages.Where(i => i.IsPrimary))
             );
 
             if(hotels.Items.Count() == 0)
@@ -150,31 +154,87 @@ namespace HMS.Application.Service
 
         }
 
-        public async Task<int> UpdateHotelAsync(HotelForUpdatingDto model)
+        public async Task<int> UpdateHotelAsync(HotelForUpdatingDto model,string userId,string userRole, CancellationToken ct = default)
         {
             if (model.Name.Length == 0 || string.IsNullOrWhiteSpace(model.Name)) throw new BadRequestException("Hotel Name is Required!");
-
             if (model.Name.Length > 100) throw new BadRequestException("Hotel Name is too long!");
-
             if (model.Address == null || string.IsNullOrWhiteSpace(model.Address)) throw new BadRequestException("Hotel Address is Required!");
-
             if (model.Address.Length > 200) throw new BadRequestException("Hotel Address is too long!");
-
             if (model.Rating < 1 || model.Rating > 5) throw new BadRequestException("Hotel Rating is Between 1-5!");
 
-            var hotel = await _hotelRepository.GetAsync(f => f.Id == model.Id);
+            var hotel = await _hotelRepository.GetAsync(
+                f => f.Id == model.Id,
+                include: query => query.Include(h => h.HotelImages));
 
             if (hotel == null)
                 throw new NotFoundException("Hotel not found!");
+
+            if (userRole == "Manager")
+            {
+                var manager = await _managerRepository.GetAsync(x => x.ApplicationUserId == userId);
+
+                if (manager == null || manager.HotelId != hotel.Id)
+                    throw new NotAllowedException("You cannot edit a hotel that is not assigned to you.");
+            }
 
             hotel.Name = model.Name;
             hotel.Address = model.Address;
             hotel.Rating = model.Rating;
 
+            if (model.ImageIdsToDelete != null && model.ImageIdsToDelete.Any())
+            {
+                var imagesToRemove = hotel.HotelImages
+                    .Where(i => model.ImageIdsToDelete.Contains(i.Id))
+                    .ToList();
+
+                foreach (var image in imagesToRemove)
+                {
+                    if (!string.IsNullOrEmpty(image.ImagePublicId))
+                        await _cloudinaryImageService.DeleteAsync(image.ImagePublicId, ct: ct);
+
+                    hotel.HotelImages.Remove(image);
+                }
+            }
+
+            if (model.ImagesToAdd != null && model.ImagesToAdd.Any(f => f != null && f.Length > 0))
+            {
+                var validFiles = model.ImagesToAdd.Where(f => f != null && f.Length > 0).ToList();
+
+                foreach (var file in validFiles)
+                {
+                    var uploadResult = await _cloudinaryImageService.UploadAsync(file, width: 1200, height: 800, folder: "hotels", ct);
+
+                    hotel.HotelImages.Add(new HotelImage
+                    {
+                        ImageUrl = uploadResult.Url,
+                        ImagePublicId = uploadResult.publicId,
+                        IsPrimary = false
+                    });
+                }
+            }
+
+            if (hotel.HotelImages.Any() && !hotel.HotelImages.Any(i => i.IsPrimary))
+            {
+                hotel.HotelImages.First().IsPrimary = true;
+            }
+
+            if (model.PrimaryImageId.HasValue)
+            {
+                var primaryImage = hotel.HotelImages
+                    .FirstOrDefault(i => i.Id == model.PrimaryImageId.Value);
+
+                if (primaryImage == null)
+                    throw new BadRequestException("Selected primary image was not found.");
+
+                foreach (var image in hotel.HotelImages)
+                {
+                    image.IsPrimary = image.Id == primaryImage.Id;
+                }
+            }
+
             await _hotelRepository.SaveAsync();
 
             return hotel.Id;
-
         }
     }
 }

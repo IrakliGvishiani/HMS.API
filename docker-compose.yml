@@ -36,6 +36,10 @@ services:
       - EmailSettings__Sender=irakligvidhiani@gmail.com
       - EmailSettings__Username=${SMTP_USERNAME}
       - EmailSettings__Password=${SMTP_PASSWORD}
+      - AdminSeed__Email=${ADMIN_EMAIL}
+      - AdminSeed__Password=${ADMIN_PASSWORD}
+      - AdminSeed__PersonalNumber=${ADMIN_PERSONAL_NUMBER}
+      - AdminSeed__PhoneNumber=${ADMIN_PHONE_NUMBER}
 
       - AppSettings__BaseUrl=http://209.38.225.104
 
@@ -61,7 +65,7 @@ services:
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
 
     ports:
-      - "1433:1433"
+      - "127.0.0.1:1433:1433"
 
     healthcheck:
       test:
@@ -93,6 +97,20 @@ services:
     volumes:
       - redis_data:/data
 
+  hms.client:
+    build:
+      context: ../hms-client
+      dockerfile: Dockerfile
+
+    container_name: hms-client
+
+    depends_on:
+      - hms.api
+
+    ports:
+      - "127.0.0.1:8081:80"
+
+    restart: unless-stopped
 
 volumes:
   sqlserver_data:

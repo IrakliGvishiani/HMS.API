@@ -10,7 +10,7 @@ namespace HMS.Application.Contracts.Service
     {
         Task<int> CreateAdminAsync(Admin model);
 
-        Task<int> DeleteAdminAsync(int id,string userId);
+        Task<string> DeleteAdminAsync(string userId);
 
         Task<IEnumerable<AdminForGettingDto>> GetAllAdminAsync();
     }

@@ -19,16 +19,18 @@ namespace HMS.Application.Service
         private readonly IAdminRepository _adminRepository;
         private readonly IApplicationUserRepository _applicationUserRepository;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public AdminService(IAdminRepository adminRepository, IApplicationUserRepository applicationUserRepository,
             UserManager<ApplicationUser> userManager,
-            IMapper mapper)
+            IMapper mapper, IUnitOfWork unitOfWork)
         {
             _adminRepository = adminRepository;
             _applicationUserRepository = applicationUserRepository;
             _userManager = userManager;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
 
@@ -55,51 +57,63 @@ namespace HMS.Application.Service
             return model.Id;
         }
 
-        public async Task<int> DeleteAdminAsync(int id,string userId)
+        public async Task<string> DeleteAdminAsync(string userId)
         {
 
-            var admin = await _adminRepository.GetAsync(x => x.Id == id,
-                include: query => query.Include(x => x.ApplicationUser));
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                var admin = await _adminRepository.GetAsync(
+                x => x.ApplicationUserId == userId,
+                include: query => query.Include(x => x.ApplicationUser)
+            );
 
-            if (admin == null) throw new NotFoundException("Admin not found!");
-         
-            var adminUser = await _userManager.FindByIdAsync(userId);
+                if (admin == null)
+                    throw new NotFoundException("Admin not found!");
 
-            if (adminUser == null) throw new NotFoundException("User Not Found!");
-
-            var hasAnotherAdmin = await _adminRepository.ExistsAsync(
-                x => x.Id != admin.Id
+                var hasAnotherAdmin = await _adminRepository.ExistsAsync(
+                    x => x.Id != admin.Id
                 );
 
-            if (!hasAnotherAdmin)
-                throw new BadRequestException("Admin cannot be deleted because this hotel must have at least one Admin");
-
-            if (admin.ApplicationUserId != adminUser.Id)
-                throw new BadRequestException("You Can't Delete Another Admin");
-
-            var applicationUser = admin.ApplicationUser;
-
-            _adminRepository.Remove(admin);
-
-            if(applicationUser != null)
-            {
-               var result = await _userManager.DeleteAsync(applicationUser);
-
-                if (!result.Succeeded)
-                {
+                if (!hasAnotherAdmin)
                     throw new BadRequestException(
-                       result.Errors.First().Description);
-                }
-            }
+                        "Admin cannot be deleted because there must be at least one Admin."
+                    );
 
-            await _adminRepository.SaveAsync();
-            return id;
+                var applicationUser = admin.ApplicationUser;
+
+                _adminRepository.Remove(admin);
+
+                if (applicationUser != null)
+                {
+                    var result = await _userManager.DeleteAsync(applicationUser);
+
+                    if (!result.Succeeded)
+                    {
+                        throw new BadRequestException(
+                            result.Errors.First().Description
+                        );
+                    }
+                }
+
+               
+                await _adminRepository.SaveAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return userId;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+            
         }
         #region Get All Admin
         public async Task<IEnumerable<AdminForGettingDto>> GetAllAdminAsync()
         {
             var admins = await _adminRepository.GetAllAsync(
-                includes: x => x.ApplicationUser);
+                includes: q => q.Include(a => a.ApplicationUser));
 
             return _mapper.Map<IEnumerable<AdminForGettingDto>>(admins.Items);
 

@@ -15,6 +15,6 @@ namespace HMS.Application.Models.HotelDtos
         public string City { get; set; }
 
         public string PrimaryImageUrl { get; set; }
-        public List<string> ImageUrls { get; set; } = new();
+        public List<HotelImageDto> Images { get; set; } = new();
     }
 }

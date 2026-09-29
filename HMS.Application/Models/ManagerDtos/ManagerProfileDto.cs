@@ -4,13 +4,13 @@ using System.Text;
 
 namespace HMS.Application.Models.ManagerDtos
 {
-    public class ManagerListForGettingDto
+    public class ManagerProfileDto
     {
         public int Id { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string PersonalNumber { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public string PersonalNumber { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public int HotelId { get; set; }
         public string HotelName { get; set; } = string.Empty;

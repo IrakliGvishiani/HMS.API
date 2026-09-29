@@ -97,40 +97,58 @@ namespace HMS.Application.Service
 
         public async Task<int> DeleteRoomAsync(int id, string userId)
         {
-            var room = await _roomRepository.GetAsync(x => x.Id == id);
+            
+            var room = await _roomRepository.GetAsync(
+                x => x.Id == id,
+                include: query => query.Include(r => r.RoomImages));
 
+            if (room == null)
+                throw new NotFoundException("Room not found!");
 
+            
             var manager = await _managerRepository.GetAsync(m => m.ApplicationUserId == userId);
+            var admin = await _adminRepository.GetAsync(a => a.ApplicationUserId == userId);
 
-            if (manager == null)
-                throw new NotFoundException("Manager not found.");
+            if (manager == null && admin == null)
+                throw new NotFoundException("User not found.");
 
-            if (room.HotelId != manager.HotelId)
-                throw new NotAllowedException(
-                    "You cannot delete a room from another hotel.");
+           
+            if (manager != null && room.HotelId != manager.HotelId)
+                throw new NotAllowedException("You cannot delete a room from another hotel.");
 
+            
             bool hasReservations = await _reservationRoomRepository.ExistsAsync(rr =>
-    rr.RoomId == id &&
-    rr.Reservation.CheckOutDate >= DateTime.UtcNow.Date);
-
+                rr.RoomId == id &&
+                rr.Reservation.CheckOutDate >= DateTime.UtcNow.Date);
 
             if (hasReservations)
             {
                 throw new BadRequestException("Room cannot be deleted because it has active reservations.");
             }
+
             
-            if (room == null) throw new NotFoundException("Room not found!");
+            if (room.RoomImages != null && room.RoomImages.Any())
+            {
+                foreach (var image in room.RoomImages)
+                {
+                    if (!string.IsNullOrEmpty(image.ImagePublicId))
+                    {
+                        await _cloudinaryImageService.DeleteAsync(image.ImagePublicId);
+                    }
+                }
+            }
+
+            
             _roomRepository.Remove(room);
             await _roomRepository.SaveAsync();
+
             return room.Id;
         }
 
         public async Task<IEnumerable<RoomForGettingDto>> GetRoomsByHotelIdAsync(int hotelId)
         {
             var rooms = await _roomRepository.GetAllAsync(filter: r => r.HotelId == hotelId,
-                includes: new Expression<Func<Room, Object>>[] {
-                r => r.RoomImages
-                },
+                includes: q => q.Include(r => r.RoomImages),
 
                 tracking: false);
             var mappedrooms = _mapper.Map<IEnumerable<RoomForGettingDto>>(rooms.Items);
@@ -147,10 +165,7 @@ namespace HMS.Application.Service
          !room.ReservationRooms.Any(rr =>
              rr.Reservation.CheckInDate < model.CheckOutDate &&
              rr.Reservation.CheckOutDate > model.CheckInDate),
-     includes: new Expression<Func<Room, object>>[]
-     {
-         room => room.RoomImages
-     },
+     includes: q => q.Include(r => r.RoomImages),
      tracking: false
  );
 
@@ -158,36 +173,118 @@ namespace HMS.Application.Service
 
         }
 
-        public async Task<RoomForUpdatingDto> UpdateRoomAsync(RoomForUpdatingDto model, string userId)
+        public async Task<RoomForUpdatingDto> UpdateRoomAsync(
+            RoomForUpdatingDto model,
+            string userId,
+            CancellationToken ct = default)
         {
-           if(model == null) throw new BadRequestException("Request Model Required!");
+            if (model == null)
+                throw new BadRequestException("Request Model Required!");
 
-            if(model.Name.Length == 0 || string.IsNullOrWhiteSpace(model.Name)) throw new BadRequestException("Room Name is Required!");
+            if (string.IsNullOrWhiteSpace(model.Name))
+                throw new BadRequestException("Room Name is Required!");
 
-            if(model.Name.Length > 100) throw new BadRequestException("Room Name is too long!");
+            if (model.Name.Length > 100)
+                throw new BadRequestException("Room Name is too long!");
 
-            if(model.Price <= 0) throw new BadRequestException("Invalid Room Price!");
+            if (model.Price <= 0)
+                throw new BadRequestException("Invalid Room Price!");
 
-            var room = await _roomRepository.GetAsync(x => x.Id == model.Id);
+            var room = await _roomRepository.GetAsync(
+                x => x.Id == model.Id,
+                include: query => query.Include(x => x.RoomImages));
 
-            if (room == null) throw new NotFoundException("Room not found!");
+            if (room == null)
+                throw new NotFoundException("Room not found!");
 
             var manager = await _managerRepository.GetAsync(
-            x => x.ApplicationUserId == userId);
+                x => x.ApplicationUserId == userId);
+            var  admin = await _adminRepository.GetAsync(a => a.ApplicationUserId == userId);
+            if (manager == null && admin == null)
+                throw new NotFoundException("User not found.");
 
-            if (manager == null)
-                throw new NotFoundException("Manager not found.");
-
-            if (room.HotelId != manager.HotelId)
+            if (manager != null && room.HotelId != manager.HotelId)
                 throw new NotAllowedException(
                     "You cannot update a room from another hotel.");
 
-            var mappedRoom = _mapper.Map(model, room);
+            room.Name = model.Name;
+            room.Price = model.Price;
 
-            _roomRepository.Update(mappedRoom);
+            
+            if (model.ImageIdsToDelete != null &&
+                model.ImageIdsToDelete.Any())
+            {
+                var imagesToRemove = room.RoomImages
+                    .Where(i => model.ImageIdsToDelete.Contains(i.Id))
+                    .ToList();
+
+                foreach (var image in imagesToRemove)
+                {
+                    if (!string.IsNullOrEmpty(image.ImagePublicId))
+                    {
+                        await _cloudinaryImageService.DeleteAsync(
+                            image.ImagePublicId,
+                            ct: ct);
+                    }
+
+                    room.RoomImages.Remove(image);
+                }
+            }
+
+            
+            if (model.ImagesToAdd != null &&
+                model.ImagesToAdd.Any(f => f != null && f.Length > 0))
+            {
+                var validFiles = model.ImagesToAdd
+                    .Where(f => f != null && f.Length > 0)
+                    .ToList();
+
+                foreach (var file in validFiles)
+                {
+                    var uploadResult =
+                        await _cloudinaryImageService.UploadAsync(
+                            file,
+                            width: 1200,
+                            height: 800,
+                            folder: "rooms",
+                            ct);
+
+                    room.RoomImages.Add(new RoomImage
+                    {
+                        ImageUrl = uploadResult.Url,
+                        ImagePublicId = uploadResult.publicId,
+                        IsPrimary = false
+                    });
+                }
+            }
+
+            
+            if (model.PrimaryImageId.HasValue)
+            {
+                var primaryImage = room.RoomImages
+                    .FirstOrDefault(i =>
+                        i.Id == model.PrimaryImageId.Value);
+
+                if (primaryImage == null)
+                    throw new BadRequestException(
+                        "Selected primary image was not found.");
+
+                foreach (var image in room.RoomImages)
+                {
+                    image.IsPrimary = image.Id == primaryImage.Id;
+                }
+            }
+
+            
+            if (room.RoomImages.Any() &&
+                !room.RoomImages.Any(i => i.IsPrimary))
+            {
+                room.RoomImages.First().IsPrimary = true;
+            }
+
             await _roomRepository.SaveAsync();
 
-            return _mapper.Map<RoomForUpdatingDto>(mappedRoom);
+            return _mapper.Map<RoomForUpdatingDto>(room);
         }
 
         public async Task<RoomDetailsDto> GetRoomDetailsByIdAsync(int roomId)

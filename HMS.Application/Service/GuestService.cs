@@ -92,7 +92,13 @@ namespace HMS.Application.Service
             return guest.Id;
         }
 
+        public async Task<IEnumerable<GuestForGettingDto>> GetAllGuestsAsync()
+        {
+            var (guests, _) = await _guestRepository.GetAllAsync(
+                includes: q => q.Include(x => x.ApplicationUser));
 
+            return _mapper.Map<IEnumerable<GuestForGettingDto>>(guests);
+        }
 
         public async Task<GuestForGettingDto> UpdateGuestAsync(GuestForUpdatingDto model)
         {

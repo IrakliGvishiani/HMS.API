@@ -6,7 +6,7 @@ namespace HMS.Application.Models.Analytics
 {
   public class HotelAnalyticsDto
     {
-        public int HotelId { get; set; }
+        public int? HotelId { get; set; }
 
         public int TotalRooms { get; set; }
 

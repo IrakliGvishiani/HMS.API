@@ -11,6 +11,7 @@ using HMS.Application.Service;
 using HMS.Domain.Entities;
 using HMS.Infrastructure.Data;
 using HMS.Infrastructure.Persistance;
+using HMS.Infrastructure.Seed;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,7 +29,7 @@ namespace HMS.API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +116,7 @@ namespace HMS.API
             builder.Services.AddScoped<CommonResponse>();
             builder.Services.AddScoped<IReservationService, ReservationService>();
             builder.Services.AddScoped<ICloudinaryImageService, CloudinaryImageService>();
+            builder.Services.AddScoped<AdminSeeder>();
             // REPOSITORIES
             builder.Services.AddScoped<IHotelRepository, HotelRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
@@ -130,16 +132,21 @@ namespace HMS.API
 
 
             // CORS
-            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:4200" };
+            //var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:4200" };
 
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AngularApp", policy =>
                 {
-                    policy.WithOrigins(allowedOrigins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy
+                        .WithOrigins(
+                            "http://localhost:4200",
+                            "http://127.0.0.1:8081",
+                            "http://localhost:8081"
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
@@ -213,14 +220,21 @@ namespace HMS.API
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseHttpsRedirection();
-            app.UseCors("AngularDev");
+            app.UseCors("AngularApp");
             app.UseAuthentication();    
             app.UseAuthorization();
             app.MapControllers();
             using (var scope = app.Services.CreateScope())
             {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var context = scope.ServiceProvider
+                    .GetRequiredService<ApplicationDbContext>();
+
                 context.Database.Migrate();
+
+                var adminSeeder = scope.ServiceProvider
+                    .GetRequiredService<AdminSeeder>();
+
+                await adminSeeder.SeedAsync(scope.ServiceProvider);
             }
             app.Run();
         }
