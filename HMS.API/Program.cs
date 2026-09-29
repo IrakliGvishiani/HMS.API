@@ -138,11 +138,13 @@ namespace HMS.API
             {
                 options.AddPolicy("AngularApp", policy =>
                 {
+                    var baseUrl = builder.Configuration["AppSettings:BaseUrl"] ?? "http://localhost:4200";
+
                     policy
                         .WithOrigins(
                             "http://localhost:4200",
                             "http://127.0.0.1:8081",
-                            "http://localhost:8081"
+                            baseUrl.TrimEnd('/') 
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
