@@ -1,5 +1,7 @@
 ﻿using HMS.Domain.Entities;
+using HMS.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -27,6 +29,8 @@ namespace HMS.Infrastructure.Seed
             var roleManager =
                 serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
+            var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
+
             var adminEmail =
                    _configuration["AdminSeed:Email"];
 
@@ -45,10 +49,10 @@ namespace HMS.Infrastructure.Seed
             if (string.IsNullOrWhiteSpace(adminPassword))
                 throw new Exception("AdminSeed:Password is not configured.");
 
-            if(string.IsNullOrWhiteSpace(adminPersonalNumber))
+            if (string.IsNullOrWhiteSpace(adminPersonalNumber))
                 throw new Exception("AdminSeed:PersonalNumber is not configured.");
 
-            if(string.IsNullOrWhiteSpace(adminPhoneNumber))
+            if (string.IsNullOrWhiteSpace(adminPhoneNumber))
                 throw new Exception("AdminSeed:PhoneNumber is not configured.");
 
             if (!await roleManager.RoleExistsAsync("Admin"))
@@ -63,26 +67,44 @@ namespace HMS.Infrastructure.Seed
             if (existingAdmin != null)
                 return;
 
-            var admin = new ApplicationUser
+            if (existingAdmin == null)
             {
-                UserName = adminEmail,
-                Email = adminEmail,
-                EmailConfirmed = true,
-                PersonalNumber = adminPersonalNumber,
-                PhoneNumber = adminPhoneNumber
-            };
+                var admin = new ApplicationUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    PersonalNumber = adminPersonalNumber,
+                    PhoneNumber = adminPhoneNumber
+                };
 
-            var result = await userManager.CreateAsync(
-                admin,
-                adminPassword);
+                var result = await userManager.CreateAsync(
+                    admin,
+                    adminPassword);
 
-            if (!result.Succeeded)
-            {
-                throw new Exception(
-                    string.Join(", ", result.Errors.Select(x => x.Description)));
+                if (!result.Succeeded)
+                {
+                    throw new Exception(
+                        string.Join(", ", result.Errors.Select(x => x.Description)));
+                }
+
+                await userManager.AddToRoleAsync(admin, "Admin");
             }
 
-            await userManager.AddToRoleAsync(admin, "Admin");
+            var existingAdminProfile = await context.Admins.FirstOrDefaultAsync(a => a.ApplicationUserId == existingAdmin.Id);
+
+            if (existingAdminProfile == null)
+            {
+                var adminProfile = new Admin
+                {
+                    ApplicationUserId = existingAdmin.Id,
+                    FirstName = _configuration["AdminSeed:FirstName"],
+                    LastName = _configuration["AdminSeed:LastName"]
+                };
+               await context.Admins.AddAsync(adminProfile);
+                await context.SaveChangesAsync();
+
+            }
         }
     }
 }
