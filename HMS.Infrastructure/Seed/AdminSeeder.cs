@@ -1,12 +1,12 @@
 ﻿using HMS.Domain.Entities;
-using HMS.Infrastructure.Data;
+using HMS.Infrastructure.Data; 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HMS.Infrastructure.Seed
 {
@@ -14,34 +14,21 @@ namespace HMS.Infrastructure.Seed
     {
         private readonly IConfiguration _configuration;
 
-
         public AdminSeeder(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        public async Task SeedAsync(
-        IServiceProvider serviceProvider)
+        public async Task SeedAsync(IServiceProvider serviceProvider)
         {
-            var userManager =
-                serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-
-            var roleManager =
-                serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var adminEmail =
-                   _configuration["AdminSeed:Email"];
-
-            var adminPassword =
-                 _configuration["AdminSeed:Password"];
-
-            var adminPersonalNumber =
-                 _configuration["AdminSeed:PersonalNumber"];
-
-            var adminPhoneNumber =
-                 _configuration["AdminSeed:PhoneNumber"];
+            var adminEmail = _configuration["AdminSeed:Email"];
+            var adminPassword = _configuration["AdminSeed:Password"];
+            var adminPersonalNumber = _configuration["AdminSeed:PersonalNumber"];
+            var adminPhoneNumber = _configuration["AdminSeed:PhoneNumber"];
 
             if (string.IsNullOrWhiteSpace(adminEmail))
                 throw new Exception("AdminSeed:Email is not configured.");
@@ -57,19 +44,16 @@ namespace HMS.Infrastructure.Seed
 
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
-                await roleManager.CreateAsync(
-                    new IdentityRole("Admin"));
+                await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
 
-            var existingAdmin =
-                await userManager.FindByEmailAsync(adminEmail);
+            
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
-            if (existingAdmin != null)
-                return;
-
-            if (existingAdmin == null)
+            
+            if (adminUser == null)
             {
-                var admin = new ApplicationUser
+                adminUser = new ApplicationUser
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
@@ -78,32 +62,34 @@ namespace HMS.Infrastructure.Seed
                     PhoneNumber = adminPhoneNumber
                 };
 
-                var result = await userManager.CreateAsync(
-                    admin,
-                    adminPassword);
+                var result = await userManager.CreateAsync(adminUser, adminPassword);
 
                 if (!result.Succeeded)
                 {
-                    throw new Exception(
-                        string.Join(", ", result.Errors.Select(x => x.Description)));
+                    throw new Exception(string.Join(", ", result.Errors.Select(x => x.Description)));
                 }
 
-                await userManager.AddToRoleAsync(admin, "Admin");
+                await userManager.AddToRoleAsync(adminUser, "Admin");
             }
 
-            var existingAdminProfile = await context.Admins.FirstOrDefaultAsync(a => a.ApplicationUserId == existingAdmin.Id);
+            
+            string adminUserId = adminUser.Id;
+
+           
+            var existingAdminProfile = await context.Admins
+                .FirstOrDefaultAsync(a => a.ApplicationUserId == adminUserId);
 
             if (existingAdminProfile == null)
             {
                 var adminProfile = new Admin
                 {
-                    ApplicationUserId = existingAdmin.Id,
-                    FirstName = _configuration["AdminSeed:FirstName"],
-                    LastName = _configuration["AdminSeed:LastName"]
+                    ApplicationUserId = adminUserId,
+                    FirstName = _configuration["AdminSeed:FirstName"] ?? "System",
+                    LastName = _configuration["AdminSeed:LastName"] ?? "Admin"
                 };
-               await context.Admins.AddAsync(adminProfile);
-                await context.SaveChangesAsync();
 
+                await context.Admins.AddAsync(adminProfile);
+                await context.SaveChangesAsync();
             }
         }
     }
