@@ -43,7 +43,7 @@ services:
       - AdminSeed__FirstName=${ADMIN_FIRST_NAME}
       - AdminSeed__LastName=${ADMIN_LAST_NAME}
 
-      - AppSettings__BaseUrl=http://209.38.225.104
+      - AppSettings__BaseUrl=http://64.226.125.2
 
     healthcheck:
       test:
