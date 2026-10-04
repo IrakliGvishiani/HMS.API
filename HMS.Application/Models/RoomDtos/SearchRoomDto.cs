@@ -6,6 +6,8 @@ namespace HMS.Application.Models.RoomDtos
 {
     public class SearchRoomDto
     {
+
+        public int? HotelId { get; set; }
         public double MinPrice { get; set; } = 0;
 
         public double MaxPrice { get; set; } = 10000000;

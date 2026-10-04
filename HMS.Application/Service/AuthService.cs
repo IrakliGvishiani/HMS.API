@@ -498,7 +498,7 @@ namespace HMS.Application.Service
                 Encoding.UTF8.GetBytes(token)
             );
 
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://64.226.125.2";
+            var baseUrl = _configuration["AppSettings:BaseUrl"];
 
             var resetLink =
                $"{baseUrl}/reset-password" +
@@ -636,7 +636,7 @@ namespace HMS.Application.Service
                 code,
                 TimeSpan.FromMinutes(5));
 
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "http://64.226.125.2";
+            var baseUrl = _configuration["AppSettings:BaseUrl"];
 
             var confirmationLink =
              $"{baseUrl}/confirm-email?email={Uri.EscapeDataString(user.Email)}";

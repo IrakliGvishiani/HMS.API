@@ -5,8 +5,10 @@ using HMS.Application.Models.ReservationDtos;
 using HMS.Domain.Entities;
 using HMS.Domain.Enum;
 using MapsterMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Net;
 
 namespace HMS.Application.Service;
 
@@ -17,6 +19,8 @@ public class ReservationService : IReservationService
     private readonly IGuestRepository _guestRepository;
     private readonly IReservationRoomRepository _reservationRoomRepository;
     private readonly IManagerRepository _managerRepository;
+    private readonly IEmailService _emailService;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IMapper _mapper;
 
     public ReservationService(
@@ -25,6 +29,8 @@ public class ReservationService : IReservationService
         IGuestRepository guestRepository,
         IMapper mapper,
         IReservationRoomRepository reservationRoomRepository,
+        IEmailService emailService,
+        UserManager<ApplicationUser> userManager,
         IManagerRepository managerRepository)
     {
         _reservationRepository = reservationRepository;
@@ -33,6 +39,8 @@ public class ReservationService : IReservationService
         _mapper = mapper;
         _reservationRoomRepository = reservationRoomRepository;
         _managerRepository = managerRepository;
+        _emailService = emailService;
+        _userManager = userManager;
     }
 
 
@@ -47,30 +55,20 @@ public class ReservationService : IReservationService
             throw new BadRequestException("Request model is required.");
 
         if (model.CheckInDate.Date < DateTime.UtcNow.Date)
-            throw new BadRequestException(
-                "Check-in date cannot be before today.");
+            throw new BadRequestException("Check-in date cannot be before today.");
 
-        if (model.CheckOutDate <= model.CheckInDate)
-            throw new BadRequestException(
-                "Check-out date must be after check-in date.");
+        if (model.CheckOutDate.Date <= model.CheckInDate.Date)
+            throw new BadRequestException("Check-out date must be after check-in date.");
 
         if (model.RoomIds == null || !model.RoomIds.Any())
-            throw new BadRequestException(
-                "At least one room must be selected.");
+            throw new BadRequestException("At least one room must be selected.");
 
-
-        int targetGuestId;
+        Guest guest;
 
         if (userRole == "Guest")
         {
-            var guest = await _guestRepository.GetAsync(
-                x => x.ApplicationUserId == userId);
-
-            if (guest == null)
-                throw new NotFoundException(
-                    "Guest profile not found.");
-
-            targetGuestId = guest.Id;
+            guest = await _guestRepository.GetAsync(x => x.ApplicationUserId == userId)
+                ?? throw new NotFoundException("Guest profile not found.");
         }
         else
         {
@@ -78,79 +76,105 @@ public class ReservationService : IReservationService
                 throw new BadRequestException(
                     "GuestId is required when reservation is created by Admin or Manager.");
 
-            var guestExists = await _guestRepository.ExistsAsync(
-                x => x.Id == model.GuestId.Value);
-
-            if (!guestExists)
-                throw new NotFoundException(
-                    "Specified Guest not found.");
-
-            targetGuestId = model.GuestId.Value;
+            guest = await _guestRepository.GetAsync(x => x.Id == model.GuestId.Value)
+                ?? throw new NotFoundException("Specified Guest not found.");
         }
 
-        var managerHotelId = await GetManagerHotelIdAsync(
-                    userId,
-                    userRole);
+        var managerHotelId = await GetManagerHotelIdAsync(userId, userRole);
 
+        var user = await _userManager.FindByIdAsync(guest.ApplicationUserId);
 
+        var guestEmail = user?.Email ?? throw new NotFoundException("Guest's email not found.");
+
+        var guestFullName = $"{guest?.FirstName} {guest?.LastName}";
 
         var rooms = await _roomRepository.GetAllAsync(
-    filter: room =>
-        model.RoomIds.Contains(room.Id) &&
-
-
-        (!managerHotelId.HasValue ||
-         room.HotelId == managerHotelId.Value) &&
-
-        !room.ReservationRooms.Any(rr =>
-            rr.Reservation.Status != ReservationStatus.Cancelled &&
-            rr.Reservation.CheckInDate < model.CheckOutDate &&
-            rr.Reservation.CheckOutDate > model.CheckInDate),
-
-    tracking: true
-);
+            filter: room =>
+                model.RoomIds.Contains(room.Id) &&
+                (!managerHotelId.HasValue || room.HotelId == managerHotelId.Value) &&
+                !room.ReservationRooms.Any(rr =>
+                    rr.Reservation.Status != ReservationStatus.Cancelled &&
+                    rr.Reservation.CheckInDate < model.CheckOutDate &&
+                    rr.Reservation.CheckOutDate > model.CheckInDate),
+            includes: new Func<IQueryable<Room>, IQueryable<Room>>[]
+            {
+            query => query.Include(r => r.Hotel)
+            },
+            tracking: true);
 
         var availableRooms = rooms.Items.ToList();
 
-
         if (availableRooms.Count != model.RoomIds.Distinct().Count())
-        {
             throw new BadRequestException(
                 "One or more selected rooms are not available for the specified dates.");
-        }
 
+
+        if (availableRooms.Select(r => r.HotelId).Distinct().Count() > 1)
+            throw new BadRequestException("All rooms must belong to the same hotel.");
 
         var reservation = new Reservation
         {
             CheckInDate = model.CheckInDate,
             CheckOutDate = model.CheckOutDate,
-            GuestId = targetGuestId,
+            GuestId = guest.Id,
             Status = ReservationStatus.Reserved,
-            ReservationRooms = new List<ReservationRoom>()
+            ReservationRooms = availableRooms
+                .Select(r => new ReservationRoom { RoomId = r.Id })
+                .ToList()
         };
-
-
-        foreach (var room in availableRooms)
-        {
-            reservation.ReservationRooms.Add(
-                new ReservationRoom
-                {
-                    RoomId = room.Id,
-                    Reservation = reservation
-                });
-        }
-
 
         await _reservationRepository.AddAsync(reservation);
         await _reservationRepository.SaveAsync();
 
+        var nights = (reservation.CheckOutDate.Date - reservation.CheckInDate.Date).Days;
+        var total = availableRooms.Sum(r => r.Price) * nights;
+        var hotelName = availableRooms.First().Hotel.Name;
+
+        if (!string.IsNullOrWhiteSpace(guestEmail))
+        {
+            try
+            {
+                var body = $@"
+            <h2>Reservation confirmed</h2>
+            <p>Hello {WebUtility.HtmlEncode(guestFullName)},</p>
+            <table cellpadding='6'>
+              <tr><td><b>Reservation #</b></td><td>{reservation.Id}</td></tr>
+              <tr><td><b>Hotel</b></td><td>{WebUtility.HtmlEncode(hotelName)}</td></tr>
+              <tr><td><b>Rooms</b></td><td>{WebUtility.HtmlEncode(string.Join(", ", availableRooms.Select(r => r.Name)))}</td></tr>
+              <tr><td><b>Check-in</b></td><td>{reservation.CheckInDate:yyyy-MM-dd}</td></tr>
+              <tr><td><b>Check-out</b></td><td>{reservation.CheckOutDate:yyyy-MM-dd}</td></tr>
+              <tr><td><b>Nights</b></td><td>{nights}</td></tr>
+              <tr><td><b>Total</b></td><td>{total} $</td></tr>
+            </table>";
+
+                await _emailService.Send(to: guestEmail, subject: "Reservation Details", body: body);
+            }
+            catch (Exception ex)
+            {
+                
+            }
+        }
 
         return new ReservationForGettingDto
         {
             Id = reservation.Id,
             CheckInDate = reservation.CheckInDate,
             CheckOutDate = reservation.CheckOutDate,
-            GuestId = reservation.GuestId
+            GuestId = guest.Id,
+            GuestName = guestFullName,
+            GuestPhoneNumber = guest.ApplicationUser?.PhoneNumber,
+            HotelId = availableRooms.First().HotelId,
+            HotelName = hotelName,
+            RoomIds = availableRooms.Select(r => r.Id).ToList(),
+            Rooms = availableRooms.Select(r => new ReservationRoomInfoDto
+            {
+                RoomId = r.Id,
+                RoomName = r.Name,
+                PricePerNight = r.Price
+            }).ToList(),
+            Nights = nights,
+            TotalPrice = total,
+            Status = reservation.Status
         };
     }
 

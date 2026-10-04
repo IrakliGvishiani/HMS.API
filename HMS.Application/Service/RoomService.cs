@@ -3,6 +3,7 @@ using HMS.Application.Contracts.Service;
 using HMS.Application.Exceptions;
 using HMS.Application.Models.RoomDtos;
 using HMS.Domain.Entities;
+using HMS.Domain.Enum;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -157,20 +158,23 @@ namespace HMS.Application.Service
 
         public async Task<IEnumerable<RoomForGettingDto>> SearchRoomsAsync(SearchRoomDto model)
         {
+            if (model.CheckOutDate <= model.CheckInDate)
+                throw new ArgumentException("Check-out date must be after check-in date");
 
             var (rooms, _) = await _roomRepository.GetAllAsync(
-     filter: room =>
-         room.Price >= model.MinPrice &&
-         room.Price <= model.MaxPrice &&
-         !room.ReservationRooms.Any(rr =>
-             rr.Reservation.CheckInDate < model.CheckOutDate &&
-             rr.Reservation.CheckOutDate > model.CheckInDate),
-     includes: q => q.Include(r => r.RoomImages),
-     tracking: false
- );
+                filter: room =>
+                    (!model.HotelId.HasValue || room.HotelId == model.HotelId) &&
+                    room.Price >= model.MinPrice &&
+                    room.Price <= model.MaxPrice &&
+                    !room.ReservationRooms.Any(rr =>
+                        rr.Reservation.Status != ReservationStatus.Cancelled &&
+                        rr.Reservation.CheckInDate < model.CheckOutDate &&
+                        rr.Reservation.CheckOutDate > model.CheckInDate),
+                includes: q => q.Include(r => r.RoomImages),
+                tracking: false
+            );
 
             return _mapper.Map<IEnumerable<RoomForGettingDto>>(rooms);
-
         }
 
         public async Task<RoomForUpdatingDto> UpdateRoomAsync(

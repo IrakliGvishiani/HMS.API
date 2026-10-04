@@ -126,33 +126,49 @@ namespace HMS.Application.Mapping
 
             //RESERVATION MAPPING
             //config.NewConfig<ReservationForGettingDto,Reservation>();
+
+            config.NewConfig<ReservationRoom, ReservationRoomInfoDto>()
+                .Map(dest => dest.RoomName, src => src.Room.Name)
+                .Map(dest => dest.PricePerNight, src => src.Room.Price);
+
             config.NewConfig<Reservation, ReservationForGettingDto>()
-    .Map(
-        dest => dest.GuestName,
-        src => src.Guest.ApplicationUser.UserName
-    )
-    .Map(
-        dest => dest.GuestPhoneNumber,
-        src => src.Guest.ApplicationUser.PhoneNumber
-    )
-    .Map(
-        dest => dest.RoomIds,
-        src => src.ReservationRooms
-            .Select(rr => rr.RoomId)
-            .ToList()
-    )
-    .Map(
-        dest => dest.HotelId,
-        src => src.ReservationRooms
-            .Select(rr => rr.Room.HotelId)
-            .FirstOrDefault()
-    )
-    .Map(
-        dest => dest.HotelName,
-        src => src.ReservationRooms
-            .Select(rr => rr.Room.Hotel.Name)
-            .FirstOrDefault()
-    );
+                .Map(
+                    dest => dest.GuestName,
+                    src => $"{src.Guest.FirstName} {src.Guest.LastName}"
+                )
+                .Map(
+                    dest => dest.GuestPhoneNumber,
+                    src => src.Guest.ApplicationUser.PhoneNumber
+                )
+                .Map(
+                    dest => dest.RoomIds,
+                    src => src.ReservationRooms.Select(rr => rr.RoomId).ToList()
+                )
+                .Map(
+                    dest => dest.HotelId,
+                    src => src.ReservationRooms.Select(rr => rr.Room.HotelId).FirstOrDefault()
+                )
+                .Map(
+                    dest => dest.HotelName,
+                    src => src.ReservationRooms.Select(rr => rr.Room.Hotel.Name).FirstOrDefault()
+                )
+                .Map(
+                    dest => dest.Rooms,
+                    src => src.ReservationRooms.Select(rr => new ReservationRoomInfoDto
+                    {
+                        RoomId = rr.RoomId,
+                        RoomName = rr.Room.Name,
+                        PricePerNight = rr.Room.Price
+                    }).ToList()
+                )
+                .Map(
+                    dest => dest.Nights,
+                    src => (src.CheckOutDate.Date - src.CheckInDate.Date).Days
+                )
+                .Map(
+                    dest => dest.TotalPrice,
+                    src => src.ReservationRooms.Sum(rr => rr.Room.Price) * (src.CheckOutDate.Date - src.CheckInDate.Date).Days
+                );
 
             //ADMIN
             config.NewConfig<Admin, AdminForGettingDto>()
