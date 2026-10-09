@@ -18,7 +18,7 @@ namespace HMS.API.Jobs
 
                 var reservationRepository = scope.ServiceProvider.GetRequiredService<IReservationRepository>();
 
-                /// RESERVED TO ACTIV
+                /// RESERVED TO ACTIVE
 
                 var (reservedReservations, _) = await reservationRepository.GetAllAsync(
                     filter: x => 

@@ -96,7 +96,8 @@ namespace HMS.Application.Service
                 UniqueFilename = string.IsNullOrEmpty(publicId),
                 Overwrite = overwrite,
                 Invalidate = invalidateCdn,
-                PublicId = publicId
+                PublicId = publicId,
+                Transformation = new Transformation().Width(width).Height(height).Crop("fill").Quality("auto")
 
             };
 

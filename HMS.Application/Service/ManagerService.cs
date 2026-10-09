@@ -197,9 +197,9 @@ namespace HMS.Application.Service
 
             var now = DateTime.UtcNow;
 
-            // -------------------------
-            // TOTAL ROOMS
-            // -------------------------
+            // --------------------
+              // TOTAL ROOMS
+            // ---------------------
 
             var totalRooms = await roomRepository.CountAsync(
                 x => !hotelId.HasValue || x.HotelId == hotelId.Value
@@ -228,9 +228,9 @@ namespace HMS.Application.Service
                 .Distinct()
                 .Count();
 
-            // -------------------------
-            // FUTURE RESERVED
-            // -------------------------
+            // --------------------
+            //FUTURE RESERVED
+             // ----------------------
 
             var (reservedReservationRooms, _) =
                 await reservationRoomRepository.GetAllAsync(
@@ -249,16 +249,16 @@ namespace HMS.Application.Service
                 .Distinct()
                 .Count();
 
-            // -------------------------
-            // AVAILABLE
-            // -------------------------
+            // -----------------
+            //AVAILABLE
+            // ----------------------
 
             var availableRooms =
                 totalRooms - occupiedRooms - reservedRooms;
 
-            // -------------------------
-            // TOTAL RESERVATIONS
-            // -------------------------
+            // ---------------------
+           //TOTAL RESERVATIONS
+            // -----------------------
 
             var totalReservations =
                 await reservationRepository.CountAsync(
@@ -268,9 +268,9 @@ namespace HMS.Application.Service
                             rr => rr.Room.HotelId == hotelId.Value)
                 );
 
-            // -------------------------
-            // ACTIVE
-            // -------------------------
+            // ----------------
+             //ACTIVE
+            // ------------------
 
             var activeReservations =
                 await reservationRepository.CountAsync(
@@ -282,9 +282,9 @@ namespace HMS.Application.Service
                         x.Status == ReservationStatus.Active
                 );
 
-            // -------------------------
-            // COMPLETED
-            // -------------------------
+            // ---------------
+             //COMPLETED 
+            // ---------------
 
             var completedReservations =
                 await reservationRepository.CountAsync(
@@ -297,7 +297,7 @@ namespace HMS.Application.Service
                 );
 
             // -------------------------
-            // CANCELLED
+            //CANCELLED
             // -------------------------
 
             var cancelledReservations =
@@ -311,7 +311,7 @@ namespace HMS.Application.Service
                 );
 
             // -------------------------
-            // TOTAL GUESTS
+            //TOTAL GUESTS
             // -------------------------
 
             var (reservations, _) =
@@ -328,9 +328,9 @@ namespace HMS.Application.Service
                 .Distinct()
                 .Count();
 
-            // -------------------------
-            // TOTAL REVENUE
-            // -------------------------
+            // ----------------------
+            //TOTAL REVENUE
+            // ------------------
 
             var totalRevenue = 0.0;
 

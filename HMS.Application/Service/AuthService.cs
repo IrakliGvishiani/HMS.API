@@ -598,6 +598,7 @@ namespace HMS.Application.Service
         }
         #endregion
 
+        #region Revoke Token
         public async Task RevokeTokenAsync(string refreshToken)
         {
             var storedToken = await _redisService.GetAsync(
@@ -609,6 +610,9 @@ namespace HMS.Application.Service
             await _redisService.RemoveAsync(
                 $"refresh-token:{refreshToken}");
         }
+        #endregion
+
+
         #region Generate Tokens(private)
         private async Task<LoginResponseDto> GenerateTokenPairAsync(ApplicationUser user, IList<string> roles)
         {
